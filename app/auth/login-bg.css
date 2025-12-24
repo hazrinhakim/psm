@@ -1,0 +1,37 @@
+.login-background {
+  background-color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Bubble layer */
+.login-background::before {
+  content: "";
+  position: absolute;
+  bottom: 0; /* Stick exactly to the bottom */
+  left: 0;
+  width: 400%; /* Keep wide for animation */
+  height: 50vh; /* Taller so circles aren’t cut off */
+
+  background-image:
+    radial-gradient(circle 7vw at 12vw 20vh, rgba(0, 0, 0, 0.400) 98%, transparent 100%),
+    radial-gradient(circle 10vw at 38vw 28vh, rgba(0, 0, 0, 0.800) 98%, transparent 100%),
+    radial-gradient(circle 9vw at 68vw 18vh, rgba(0, 0, 0, 0.650) 98%, transparent 100%),
+    radial-gradient(circle 12vw at 95vw 33vh, rgb(0, 0, 0) 98%, transparent 100%),
+    radial-gradient(circle 5vw at 125vw 15vh, rgba(0, 0, 0, 0.300) 98%, transparent 100%);
+
+  background-repeat: repeat-x;
+  background-size: 130vw 50vh; /* Match new height */
+  animation: moveBubbles 200s linear infinite;
+  filter: blur(15px);
+  z-index: 0;
+}
+
+@keyframes moveBubbles {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
