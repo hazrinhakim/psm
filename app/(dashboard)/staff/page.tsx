@@ -1,19 +1,51 @@
 import { getAssets } from '@/lib/assets'
+import { Badge } from '@/components/ui/badge'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 
 export default async function StaffDashboard() {
   const assets = await getAssets()
 
   return (
-    <div>
-      <h1 className="text-xl font-semibold mb-4">Asset List</h1>
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Asset List
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Browse and verify the current inventory.
+        </p>
+      </div>
 
-      <ul className="space-y-2">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {assets.map((a: any) => (
-          <li key={a.id} className="p-3 bg-white border rounded">
-            {a.asset_name} — {a.asset_categories?.name}
-          </li>
+          <Card key={a.id}>
+            <CardHeader className="space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <CardTitle className="text-base">
+                  {a.asset_name}
+                </CardTitle>
+                {a.asset_categories?.name && (
+                  <Badge variant="secondary">
+                    {a.asset_categories.name}
+                  </Badge>
+                )}
+              </div>
+              <CardDescription>Asset ID: {a.id}</CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              {a.asset_categories?.name
+                ? `Category: ${a.asset_categories.name}`
+                : 'Category not set'}
+            </CardContent>
+          </Card>
         ))}
-      </ul>
+      </div>
     </div>
   )
 }

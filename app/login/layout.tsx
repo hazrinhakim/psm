@@ -31,7 +31,7 @@ export default function LoginLayout({
   }, [])
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-white">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-100">
       {/* Background Bubbles */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Bottom Area Bubbles */}
@@ -71,7 +71,7 @@ export default function LoginLayout({
       </div>
 
       {/* Content */}
-      <div className="relative z-10 w-full">
+      <div className="relative z-10 w-full px-4 py-10">
         {children}
       </div>
 

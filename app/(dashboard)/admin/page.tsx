@@ -1,25 +1,54 @@
-import { getAssets } from '@/lib/assets'
-import { Sidebar } from '@/components/dashboard/Sidebar'
+import { AnimatedCount } from '@/components/dashboard/AnimatedCount'
 import { getDashboardStats } from '@/lib/dashboardStats'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 
 export default async function AdminDashboard() {
   const { totalAssets, categoryMap } = await getDashboardStats()
+  const categoryEntries = Object.entries(categoryMap)
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Dashboard
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Snapshot of asset volume across categories.
+        </p>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white border rounded-lg p-4">
-          <p className="text-sm text-slate-500">Total Assets</p>
-          <p className="text-3xl font-bold">{totalAssets}</p>
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Assets
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold tracking-tight">
+              <AnimatedCount value={totalAssets} />
+            </div>
+          </CardContent>
+        </Card>
 
-        {Object.entries(categoryMap).map(([name, count]) => (
-          <div key={name} className="bg-white border rounded-lg p-4">
-            <p className="text-sm text-slate-500">{name}</p>
-            <p className="text-3xl font-bold">{count}</p>
-          </div>
+        {categoryEntries.map(([name, count]) => (
+          <Card key={name}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {name}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-semibold tracking-tight">
+                <AnimatedCount value={count} />
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>

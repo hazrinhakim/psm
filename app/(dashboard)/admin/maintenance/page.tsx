@@ -1,5 +1,11 @@
 import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
@@ -29,32 +35,43 @@ export default async function AdminMaintenancePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">
-        Maintenance Requests
-      </h1>
+      <div className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Maintenance Requests
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Track and review reported issues from staff.
+        </p>
+      </div>
 
       {!requests?.length && (
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted-foreground">
           No maintenance requests yet.
         </p>
       )}
 
-      {requests?.map((r: any) => (
-        <Card key={r.id} className="p-4 space-y-2">
-          <div className="flex justify-between items-center">
-            <h3 className="font-medium">{r.title}</h3>
-            <Badge>{r.status}</Badge>
-          </div>
-
-          <p className="text-sm text-slate-600">
-            {r.description}
-          </p>
-
-          <p className="text-xs text-slate-400">
-            Requested by: {r.profiles?.full_name}
-          </p>
-        </Card>
-      ))}
+      <div className="grid gap-4">
+        {requests?.map((r: any) => (
+          <Card key={r.id}>
+            <CardHeader className="flex flex-row items-start justify-between space-y-0 gap-4">
+              <div className="space-y-1">
+                <CardTitle className="text-base">
+                  {r.title}
+                </CardTitle>
+                <CardDescription>
+                  Requested by {r.profiles?.full_name ?? 'Unknown'}
+                </CardDescription>
+              </div>
+              <Badge variant="secondary" className="capitalize">
+                {r.status}
+              </Badge>
+            </CardHeader>
+            <CardContent className="pt-0 text-sm text-muted-foreground">
+              {r.description}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   )
 }

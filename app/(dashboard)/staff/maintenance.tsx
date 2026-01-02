@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { createBrowserClient } from '@supabase/ssr'
 
 const supabase = createBrowserClient(
@@ -16,7 +17,8 @@ export default function StaffMaintenancePage() {
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const submitRequest = async () => {
+  const submitRequest = async (event?: React.FormEvent) => {
+    event?.preventDefault()
     setLoading(true)
 
     const {
@@ -36,28 +38,51 @@ export default function StaffMaintenancePage() {
   }
 
   return (
-    <Card className="max-w-xl">
-      <CardHeader>
-        <CardTitle>Submit Maintenance Request</CardTitle>
+    <Card className="w-full max-w-2xl">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-xl">
+          Submit Maintenance Request
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Share issues with the asset team for quicker support.
+        </p>
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        <Input
-          placeholder="Title"
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-        />
+      <CardContent>
+        <form onSubmit={submitRequest} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="request-title">Title</Label>
+            <Input
+              id="request-title"
+              placeholder="Short summary"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              required
+            />
+          </div>
 
-        <textarea
-          placeholder="Describe the issue"
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-        />
+          <div className="space-y-2">
+            <Label htmlFor="request-description">
+              Description
+            </Label>
+            <textarea
+              id="request-description"
+              placeholder="Describe the issue"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              className="min-h-[140px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              required
+            />
+          </div>
 
-        <Button onClick={submitRequest} disabled={loading}>
-          Submit
-        </Button>
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full sm:w-auto"
+          >
+            {loading ? 'Submitting...' : 'Submit'}
+          </Button>
+        </form>
       </CardContent>
     </Card>
   )
