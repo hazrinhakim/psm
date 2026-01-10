@@ -5,36 +5,51 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { createBrowserClient } from '@supabase/ssr'
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabaseClient'
+import { toast } from 'sonner'
+import { Spinner } from '@/components/ui/spinner'
 
 export default function StaffMaintenancePage() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
+  const [status, setStatus] = useState<string | null>(null)
 
   const submitRequest = async (event?: React.FormEvent) => {
     event?.preventDefault()
     setLoading(true)
+    setStatus(null)
 
     const {
       data: { user },
     } = await supabase.auth.getUser()
 
-    await supabase.from('maintenance_requests').insert({
+    if (!user) {
+      setStatus('Please sign in to submit a request.')
+      toast.error('Please sign in to submit a request.')
+      setLoading(false)
+      return
+    }
+
+    const { error } = await supabase.from('maintenance_requests').insert({
       title,
       description,
-      requested_by: user?.id,
+      requested_by: user.id,
+      status: 'pending',
     })
+
+    if (error) {
+      setStatus(error.message)
+      toast.error(error.message)
+      setLoading(false)
+      return
+    }
 
     setTitle('')
     setDescription('')
     setLoading(false)
-    alert('Request submitted')
+    setStatus('Request submitted successfully.')
+    toast.success('Request submitted successfully.')
   }
 
   return (
@@ -75,11 +90,16 @@ export default function StaffMaintenancePage() {
             />
           </div>
 
+          {status && (
+            <p className="text-sm text-muted-foreground">{status}</p>
+          )}
+
           <Button
             type="submit"
             disabled={loading}
             className="w-full sm:w-auto"
           >
+            {loading && <Spinner className="mr-2" />}
             {loading ? 'Submitting...' : 'Submit'}
           </Button>
         </form>

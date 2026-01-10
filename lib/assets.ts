@@ -7,8 +7,32 @@ export async function getAssets() {
       id,
       asset_no,
       asset_name,
+      year,
+      department,
+      unit,
+      user_name,
       type,
-      asset_categories ( name )
+      category_id,
+      model,
+      serial_no,
+      processor,
+      ram_capacity,
+      hdd_capacity,
+      monitor_model,
+      monitor_serial_no,
+      monitor_asset_no,
+      keyboard_model,
+      keyboard_serial_no,
+      keyboard_asset_no,
+      mouse_model,
+      mouse_serial_no,
+      mouse_asset_no,
+      price,
+      supplier,
+      source,
+      accessories,
+      qr_code,
+      purchase_date
     `)
     .order('asset_name')
 

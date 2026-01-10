@@ -13,16 +13,21 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { roleToPath } from '@/lib/roles'
+import { toast } from 'sonner'
+import { Spinner } from '@/components/ui/spinner'
 
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setLoading(true)
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -31,11 +36,15 @@ export default function LoginPage() {
 
     if (error) {
       setError(error.message)
+      toast.error(error.message)
+      setLoading(false)
       return
     }
 
     if (!data.user) {
       setError('Login failed')
+      toast.error('Login failed')
+      setLoading(false)
       return
     }
 
@@ -43,7 +52,13 @@ export default function LoginPage() {
     // ⛔ JANGAN redirect ikut role dulu
 
     // ✅ BIAR middleware urus redirect
-    router.replace('/admin') // dummy protected route
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', data.user.id)
+      .maybeSingle()
+
+    router.replace(roleToPath(profile?.role))
   }
 
   return (
@@ -86,7 +101,8 @@ export default function LoginPage() {
             <p className="text-sm text-destructive">{error}</p>
           )}
 
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading && <Spinner className="mr-2" />}
             Login
           </Button>
         </form>

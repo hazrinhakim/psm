@@ -1,32 +1,76 @@
-import { cookies } from 'next/headers'
-import { createServerClient } from '@supabase/ssr'
+import { createSupabaseServerClient } from './supabaseServer'
 
 export async function getDashboardStats() {
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: async () => (await cookies()).getAll(),
-        setAll: () => {},
-      },
-    }
-  )
+  const supabase = createSupabaseServerClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const { data: profile } = user
+    ? await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .maybeSingle()
+    : { data: null }
 
   const { count: totalAssets } = await supabase
     .from('assets')
-    .select('*', { count: 'exact', head: true })
+    .select('id', { count: 'exact', head: true })
 
-  const { data: byCategory } = await supabase
+  const { count: activeAssets } = await supabase
     .from('assets')
-    .select('category_id, asset_categories(name)', { count: 'exact' })
+    .select('id', { count: 'exact', head: true })
+    .not('user_name', 'is', null)
+    .neq('user_name', '')
 
-  // simple reduce
-  const categoryMap: Record<string, number> = {}
-  byCategory?.forEach((row: any) => {
-    const name = row.asset_categories?.name ?? 'Unknown'
-    categoryMap[name] = (categoryMap[name] || 0) + 1
-  })
+  const { count: pendingMaintenance } = await supabase
+    .from('maintenance_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'pending')
 
-  return { totalAssets: totalAssets ?? 0, categoryMap }
+  const { count: inProgressMaintenance } = await supabase
+    .from('maintenance_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'in_progress')
+
+  const { count: feedbackCount } = await supabase
+    .from('feedback')
+    .select('id', { count: 'exact', head: true })
+
+  const { data: recentMaintenance } = await supabase
+    .from('maintenance_requests')
+    .select(
+      `
+      id,
+      title,
+      status,
+      created_at,
+      profiles ( full_name )
+    `
+    )
+    .order('created_at', { ascending: false })
+    .limit(3)
+
+  const total = totalAssets ?? 0
+  const active = activeAssets ?? 0
+  const pending = pendingMaintenance ?? 0
+  const inProgress = inProgressMaintenance ?? 0
+  const maintenance = pending + inProgress
+  const inactive = Math.max(total - active, 0)
+
+  return {
+    userName: profile?.full_name ?? 'Admin User',
+    totalAssets: total,
+    activeAssets: active,
+    pendingMaintenance: pending,
+    feedbackCount: feedbackCount ?? 0,
+    recentMaintenance: recentMaintenance ?? [],
+    statusOverview: {
+      active,
+      maintenance,
+      inactive,
+    },
+  }
 }

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
+import { RouteLoadingOverlay } from "@/components/ui/route-loading-overlay";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,11 +28,14 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-                  style={{
-            background: "linear-gradient(126deg,rgba(176, 176, 176, 1) 0%, rgba(255, 255, 255, 1) 100%);"
-          }}
+        style={{
+          background:
+            "linear-gradient(126deg,rgba(176, 176, 176, 1) 0%, rgba(255, 255, 255, 1) 100%);",
+        }}
       >
         {children}
+        <Toaster />
+        <RouteLoadingOverlay />
       </body>
     </html>
   );
