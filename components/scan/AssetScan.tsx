@@ -9,7 +9,15 @@ import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import QrScanner from 'qr-scanner'
 
-export function AssetScan() {
+export function AssetScan({
+  scanBasePath,
+  searchPath,
+  onScanSuccess,
+}: {
+  scanBasePath?: string
+  searchPath?: string
+  onScanSuccess?: () => void
+}) {
   const [code, setCode] = useState('')
   const [status, setStatus] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -20,7 +28,10 @@ export function AssetScan() {
   const router = useRouter()
   const pathname = usePathname()
 
-  const scanBasePath = useMemo(() => {
+  const resolvedScanBasePath = useMemo(() => {
+    if (scanBasePath) {
+      return scanBasePath
+    }
     if (!pathname) {
       return '/scan'
     }
@@ -28,7 +39,7 @@ export function AssetScan() {
       return pathname
     }
     return pathname.replace(/\/$/, '')
-  }, [pathname])
+  }, [pathname, scanBasePath])
 
   const stopCamera = useCallback(() => {
     scannerRef.current?.stop()
@@ -38,9 +49,16 @@ export function AssetScan() {
   const goToResult = useCallback(
     (value: string) => {
       stopCamera()
-      router.push(`${scanBasePath}/result?code=${encodeURIComponent(value)}`)
+      onScanSuccess?.()
+      if (searchPath) {
+        router.push(`${searchPath}?q=${encodeURIComponent(value)}`)
+        return
+      }
+      router.push(
+        `${resolvedScanBasePath}/result?code=${encodeURIComponent(value)}`
+      )
     },
-    [router, scanBasePath, stopCamera]
+    [onScanSuccess, router, resolvedScanBasePath, searchPath, stopCamera]
   )
 
   const handleScan = async (event: React.FormEvent) => {
@@ -86,8 +104,13 @@ export function AssetScan() {
       scannerRef.current = new QrScanner(
         videoRef.current,
         result => {
-          const value =
-            typeof result === 'string' ? result.trim() : result?.data?.trim()
+          let raw = ''
+          if (typeof result === 'string') {
+            raw = result
+          } else if (result && typeof result === 'object' && 'data' in result) {
+            raw = String((result as { data?: unknown }).data ?? '')
+          }
+          const value = raw.trim()
           if (value) {
             goToResult(value)
           }
@@ -122,17 +145,14 @@ export function AssetScan() {
   }, [stopCamera])
 
   return (
-    <div className="space-y-6">
-      <Card className="w-full max-w-xl">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-xl">Scan Asset QR</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Use your camera on mobile/tablet or enter a QR value manually.
-          </p>
-        </CardHeader>
+    <div className="space-y-6 max-w-sm">
         <CardContent>
           <div className="space-y-5">
-            <div className="space-y-3 rounded-xl border bg-muted/40 p-3">
+            <div className="space-y-3 rounded-xl border bg-muted/40 p-4">
+              <CardTitle className="text-sm">Scan Asset QR</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Use your camera on mobile/tablet or enter a QR value manually.
+              </p>
               <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-muted">
                 <video
                   ref={videoRef}
@@ -161,27 +181,11 @@ export function AssetScan() {
                 Allow camera access, then align the QR inside the frame.
               </p>
             </div>
-
-            <form onSubmit={handleScan} className="flex flex-col gap-3 sm:flex-row">
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="scan-code">QR code / Asset ID</Label>
-                <Input
-                  id="scan-code"
-                  value={code}
-                  onChange={event => setCode(event.target.value)}
-                  placeholder="AST-1001"
-                />
-              </div>
-              <Button type="submit" disabled={loading} className="self-end">
-                {loading ? 'Searching...' : 'Search'}
-              </Button>
-            </form>
             {status && (
               <p className="text-sm text-muted-foreground">{status}</p>
             )}
           </div>
         </CardContent>
-      </Card>
     </div>
   )
 }

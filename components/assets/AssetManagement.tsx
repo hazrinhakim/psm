@@ -23,6 +23,11 @@ import { SonnerNotifier } from '@/components/ui/sonner-notifier'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 import { createAsset, deleteAsset, updateAsset } from '@/lib/assetActions'
 import { normalizeRole } from '@/lib/roles'
+import { AssetScanDialogButton } from '@/components/assets/AssetScanDialogButton'
+import {
+  AssetCategorySelect,
+  AssetDatePicker,
+} from '@/components/assets/AssetFormControls'
 import {
   MapPin,
   Calendar,
@@ -102,7 +107,7 @@ function AssetDetailsDialog({ asset, statusLabel }: { asset: any; statusLabel: s
       </DialogTrigger>
       <DialogContent className="w-[95vw] max-w-5xl sm:max-w-5xl max-h-[92vh] overflow-x-hidden">
         <ScrollArea className="max-h-[80vh] pr-4">
-          <DialogHeader className="pb-2">
+          <DialogHeader className="pb-4">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <DialogTitle className="text-xl">{asset.asset_name || 'Unnamed Asset'}</DialogTitle>
@@ -120,78 +125,83 @@ function AssetDetailsDialog({ asset, statusLabel }: { asset: any; statusLabel: s
             </div>
           </DialogHeader>
 
-          <div className="grid gap-3 text-sm">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Asset ID</p>
-                <p className="font-medium break-words">{asset.asset_no || 'N/A'}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Type</p>
-                <p className="font-medium break-words">{asset.type || 'N/A'}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Year</p>
-                <p className="font-medium break-words">{asset.year || 'N/A'}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Model</p>
-                <p className="font-medium break-words">{asset.model || 'N/A'}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Serial No</p>
-                <p className="font-medium break-words">{asset.serial_no || 'N/A'}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">QR Code</p>
-                <p className="font-medium break-words">{asset.qr_code || 'N/A'}</p>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Department</p>
-                <p className="font-medium break-words">{asset.department || 'N/A'}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Unit</p>
-                <p className="font-medium break-words">{asset.unit || 'N/A'}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Assigned User</p>
-                <p className="font-medium break-words">{asset.user_name || 'Unassigned'}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Purchase Date</p>
-                <p className="font-medium">{formatDate(asset.purchase_date)}</p>
+          <div className="space-y-5 text-sm">
+            <div className="rounded-lg border bg-muted/20 p-4">
+              <h3 className="text-sm font-semibold text-foreground">
+                Overview
+              </h3>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Asset ID</p>
+                  <p className="font-medium break-words">{asset.asset_no || 'N/A'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Type</p>
+                  <p className="font-medium break-words">{asset.type || 'N/A'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Year</p>
+                  <p className="font-medium break-words">{asset.year || 'N/A'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Model</p>
+                  <p className="font-medium break-words">{asset.model || 'N/A'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Serial No</p>
+                  <p className="font-medium break-words">{asset.serial_no || 'N/A'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">QR Code</p>
+                  <p className="font-medium break-words">{asset.qr_code || 'N/A'}</p>
+                </div>
               </div>
             </div>
 
-            <Separator />
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Price</p>
-                <p className="font-medium">
-                  {asset.price ? `RM ${parseFloat(asset.price).toLocaleString()}` : 'N/A'}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Supplier</p>
-                <p className="font-medium break-words">{asset.supplier || 'N/A'}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Source</p>
-                <p className="font-medium break-words">{asset.source || 'N/A'}</p>
+            <div className="rounded-lg border bg-muted/20 p-4">
+              <h3 className="text-sm font-semibold text-foreground">
+                Ownership & purchase
+              </h3>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Department</p>
+                  <p className="font-medium break-words">{asset.department || 'N/A'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Unit</p>
+                  <p className="font-medium break-words">{asset.unit || 'N/A'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Assigned User</p>
+                  <p className="font-medium break-words">{asset.user_name || 'Unassigned'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Purchase Date</p>
+                  <p className="font-medium">{formatDate(asset.purchase_date)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Price</p>
+                  <p className="font-medium">
+                    {asset.price ? `RM ${parseFloat(asset.price).toLocaleString()}` : 'N/A'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Supplier</p>
+                  <p className="font-medium break-words">{asset.supplier || 'N/A'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Source</p>
+                  <p className="font-medium break-words">{asset.source || 'N/A'}</p>
+                </div>
               </div>
             </div>
 
             {(asset.processor || asset.ram_capacity || asset.hdd_capacity) && (
-              <>
-                <Separator />
-                <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border bg-muted/20 p-4">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Device specifications
+                </h3>
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
                   {asset.processor && (
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Processor</p>
@@ -211,13 +221,15 @@ function AssetDetailsDialog({ asset, statusLabel }: { asset: any; statusLabel: s
                     </div>
                   )}
                 </div>
-              </>
+              </div>
             )}
 
             {(asset.monitor_model || asset.keyboard_model || asset.mouse_model) && (
-              <>
-                <Separator />
-                <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border bg-muted/20 p-4">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Peripherals
+                </h3>
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
                   {asset.monitor_model && (
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Monitor</p>
@@ -267,23 +279,25 @@ function AssetDetailsDialog({ asset, statusLabel }: { asset: any; statusLabel: s
                     </div>
                   )}
                 </div>
-              </>
+              </div>
             )}
 
-            {asset.accessories && (
-              <>
-                <Separator />
+            <div className="rounded-lg border bg-muted/20 p-4">
+              <h3 className="text-sm font-semibold text-foreground">
+                Notes
+              </h3>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Accessories</p>
-                  <p className="font-medium break-words">{asset.accessories}</p>
+                  <p className="font-medium break-words">
+                    {asset.accessories || 'None'}
+                  </p>
                 </div>
-              </>
-            )}
-
-            <Separator />
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Created Date</p>
-              <p className="font-medium">{formatDate(asset.created_at)}</p>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Created Date</p>
+                  <p className="font-medium">{formatDate(asset.created_at)}</p>
+                </div>
+              </div>
             </div>
           </div>
         </ScrollArea>
@@ -419,15 +433,6 @@ export async function AssetManagement({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Asset Management
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Welcome back, {displayName}.
-        </p>
-      </div>
-
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold tracking-tight">
@@ -453,138 +458,177 @@ export async function AssetManagement({
                     Add a new asset to the catalog with its basic information.
                   </DialogDescription>
                 </DialogHeader>
-                <form action={createAsset} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <form action={createAsset} className="space-y-6">
                   <input type="hidden" name="redirectTo" value={basePath + '/assets'} />
-                <div className="space-y-2">
-                  <Label htmlFor="asset-no">Asset ID</Label>
-                  <Input id="asset-no" name="asset_no" placeholder="AST-1001" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="asset-name">Asset name</Label>
-                  <Input id="asset-name" name="asset_name" placeholder="Dell Latitude 5420" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category-id">Category</Label>
-                  <select
-                    id="category-id"
-                    name="category_id"
-                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                    defaultValue=""
-                  >
-                    <option value="">Select category</option>
-                    {categories?.map((category: any) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="asset-type">Type</Label>
-                  <Input id="asset-type" name="type" placeholder="Laptop / Printer / Server" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="asset-qr">QR Code</Label>
-                  <Input id="asset-qr" name="qr_code" placeholder="QR-001 (optional)" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="asset-year">Year</Label>
-                  <Input id="asset-year" name="year" type="number" min="1990" placeholder="2024" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="asset-department">Department</Label>
-                  <Input id="asset-department" name="department" placeholder="IT Department" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="asset-unit">Unit</Label>
-                  <Input id="asset-unit" name="unit" placeholder="Support Unit" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="asset-user">Assigned User</Label>
-                  <Input id="asset-user" name="user_name" placeholder="Jane Doe" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="purchase-date">Purchase date</Label>
-                  <Input id="purchase-date" name="purchase_date" type="date" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="asset-price">Price</Label>
-                  <Input id="asset-price" name="price" placeholder="3500" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="asset-supplier">Supplier</Label>
-                  <Input id="asset-supplier" name="supplier" placeholder="Dell Malaysia" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="asset-source">Source</Label>
-                  <Input id="asset-source" name="source" placeholder="Purchase / Donation" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="asset-model">Model</Label>
-                  <Input id="asset-model" name="model" placeholder="Latitude 5420" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="asset-serial">Serial number</Label>
-                  <Input id="asset-serial" name="serial_no" placeholder="SN12345" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="asset-processor">Processor</Label>
-                  <Input id="asset-processor" name="processor" placeholder="Intel i5" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="asset-ram">RAM capacity</Label>
-                  <Input id="asset-ram" name="ram_capacity" placeholder="16 GB" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="asset-hdd">HDD capacity</Label>
-                  <Input id="asset-hdd" name="hdd_capacity" placeholder="512 GB SSD" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="monitor-model">Monitor model</Label>
-                  <Input id="monitor-model" name="monitor_model" placeholder="Dell P2419H" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="monitor-serial">Monitor serial no</Label>
-                  <Input id="monitor-serial" name="monitor_serial_no" placeholder="MON12345" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="monitor-asset">Monitor asset no</Label>
-                  <Input id="monitor-asset" name="monitor_asset_no" placeholder="MON-001" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="keyboard-model">Keyboard model</Label>
-                  <Input id="keyboard-model" name="keyboard_model" placeholder="Logitech K120" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="keyboard-serial">Keyboard serial no</Label>
-                  <Input id="keyboard-serial" name="keyboard_serial_no" placeholder="KB12345" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="keyboard-asset">Keyboard asset no</Label>
-                  <Input id="keyboard-asset" name="keyboard_asset_no" placeholder="KB-001" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="mouse-model">Mouse model</Label>
-                  <Input id="mouse-model" name="mouse_model" placeholder="Logitech M185" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="mouse-serial">Mouse serial no</Label>
-                  <Input id="mouse-serial" name="mouse_serial_no" placeholder="MS12345" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="mouse-asset">Mouse asset no</Label>
-                  <Input id="mouse-asset" name="mouse_asset_no" placeholder="MS-001" />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="asset-accessories">Accessories</Label>
-                  <Input id="asset-accessories" name="accessories" placeholder="Docking station, bag" />
-                </div>
-                <div className="md:col-span-2 pt-4">
-                  <Button type="submit" className="w-full sm:w-auto">
-                    Save asset
-                  </Button>
-                </div>
-              </form>
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Basic information
+                    </h3>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="asset-no">Asset ID</Label>
+                        <Input id="asset-no" name="asset_no" placeholder="AST-1001" className="h-11" required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="asset-name">Asset name</Label>
+                        <Input id="asset-name" name="asset_name" placeholder="Dell Latitude 5420" className="h-11" required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="category-id">Category</Label>
+                        <AssetCategorySelect
+                          id="category-id"
+                          name="category_id"
+                          categories={categories ?? []}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="asset-type">Type</Label>
+                        <Input id="asset-type" name="type" placeholder="Laptop / Printer / Server" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="asset-qr">QR Code</Label>
+                        <Input id="asset-qr" name="qr_code" placeholder="QR-001 (optional)" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="asset-year">Year</Label>
+                        <Input id="asset-year" name="year" type="number" min="1990" placeholder="2024" className="h-11" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Ownership and purchase
+                    </h3>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="asset-department">Department</Label>
+                        <Input id="asset-department" name="department" placeholder="IT Department" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="asset-unit">Unit</Label>
+                        <Input id="asset-unit" name="unit" placeholder="Support Unit" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="asset-user">Assigned User</Label>
+                        <Input id="asset-user" name="user_name" placeholder="Jane Doe" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="purchase-date">Purchase date</Label>
+                        <AssetDatePicker
+                          id="purchase-date"
+                          name="purchase_date"
+                          placeholder="Pick purchase date"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="asset-price">Price</Label>
+                        <Input id="asset-price" name="price" placeholder="3500" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="asset-supplier">Supplier</Label>
+                        <Input id="asset-supplier" name="supplier" placeholder="Dell Malaysia" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="asset-source">Source</Label>
+                        <Input id="asset-source" name="source" placeholder="Purchase / Donation" className="h-11" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Device specifications
+                    </h3>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="asset-model">Model</Label>
+                        <Input id="asset-model" name="model" placeholder="Latitude 5420" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="asset-serial">Serial number</Label>
+                        <Input id="asset-serial" name="serial_no" placeholder="SN12345" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="asset-processor">Processor</Label>
+                        <Input id="asset-processor" name="processor" placeholder="Intel i5" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="asset-ram">RAM capacity</Label>
+                        <Input id="asset-ram" name="ram_capacity" placeholder="16 GB" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="asset-hdd">HDD capacity</Label>
+                        <Input id="asset-hdd" name="hdd_capacity" placeholder="512 GB SSD" className="h-11" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Peripherals
+                    </h3>
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="monitor-model">Monitor model</Label>
+                        <Input id="monitor-model" name="monitor_model" placeholder="Dell P2419H" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="monitor-serial">Monitor serial no</Label>
+                        <Input id="monitor-serial" name="monitor_serial_no" placeholder="MON12345" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="monitor-asset">Monitor asset no</Label>
+                        <Input id="monitor-asset" name="monitor_asset_no" placeholder="MON-001" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="keyboard-model">Keyboard model</Label>
+                        <Input id="keyboard-model" name="keyboard_model" placeholder="Logitech K120" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="keyboard-serial">Keyboard serial no</Label>
+                        <Input id="keyboard-serial" name="keyboard_serial_no" placeholder="KB12345" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="keyboard-asset">Keyboard asset no</Label>
+                        <Input id="keyboard-asset" name="keyboard_asset_no" placeholder="KB-001" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="mouse-model">Mouse model</Label>
+                        <Input id="mouse-model" name="mouse_model" placeholder="Logitech M185" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="mouse-serial">Mouse serial no</Label>
+                        <Input id="mouse-serial" name="mouse_serial_no" placeholder="MS12345" className="h-11" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="mouse-asset">Mouse asset no</Label>
+                        <Input id="mouse-asset" name="mouse_asset_no" placeholder="MS-001" className="h-11" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="space-y-2 md:col-span-2 xl:col-span-3">
+                      <Label htmlFor="asset-accessories">Accessories</Label>
+                      <Input id="asset-accessories" name="accessories" placeholder="Docking station, bag" className="h-11" />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    <Button type="submit" className="w-full sm:w-auto">
+                      Save asset
+                    </Button>
+                  </div>
+                </form>
               </ScrollArea>
             </DialogContent>
           </Dialog>
@@ -621,24 +665,32 @@ export async function AssetManagement({
         />
       )}
 
-      <Card>
-        <CardContent className="pt-6">
-          <form method="get" className="flex w-full items-center gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                name="q"
-                placeholder="Search assets..."
-                defaultValue={query}
-                className="pl-9"
-              />
-            </div>
-            <Button type="submit" variant="outline">
+      <CardContent className="pt-6">
+        <form
+          method="get"
+          className="flex w-full flex-col gap-3 sm:flex-row sm:items-center"
+        >
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              name="q"
+              placeholder="Search assets..."
+              defaultValue={query}
+              className="h-11 rounded-full border-muted pl-11 pr-4 shadow-sm focus-visible:ring-2 focus-visible:ring-offset-0"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Button type="submit" className="h-11 rounded-full gap-2">
+              <Search className="h-4 w-4" />
               Search
             </Button>
-          </form>
-        </CardContent>
-      </Card>
+            <Button asChild variant="ghost" className="h-11 rounded-full">
+              <a href={`${basePath}/assets`}>Clear</a>
+            </Button>
+            <AssetScanDialogButton basePath={basePath} />
+          </div>
+        </form>
+      </CardContent>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -759,255 +811,314 @@ export async function AssetManagement({
                                 Update asset information.
                               </DialogDescription>
                             </DialogHeader>
-                            <form
-                              action={updateAsset}
-                              className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
-                            >
+                            <form action={updateAsset} className="space-y-6">
                               <input type="hidden" name="redirectTo" value={basePath + '/assets'} />
                               <input type="hidden" name="id" value={asset.id} />
-                            <div className="space-y-2">
-                              <Label htmlFor={`asset-no-${asset.id}`}>Asset ID</Label>
-                              <Input
-                                id={`asset-no-${asset.id}`}
-                                name="asset_no"
-                                defaultValue={asset.asset_no ?? ''}
-                                required
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`asset-name-${asset.id}`}>Asset name</Label>
-                              <Input
-                                id={`asset-name-${asset.id}`}
-                                name="asset_name"
-                                defaultValue={asset.asset_name ?? ''}
-                                required
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`category-${asset.id}`}>Category</Label>
-                              <select
-                                id={`category-${asset.id}`}
-                                name="category_id"
-                                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                                defaultValue={asset.category_id ?? ''}
-                              >
-                                <option value="">Select category</option>
-                                {categories?.map((category: any) => (
-                                  <option key={category.id} value={category.id}>
-                                    {category.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`type-${asset.id}`}>Type</Label>
-                              <Input
-                                id={`type-${asset.id}`}
-                                name="type"
-                                defaultValue={asset.type ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`qr-${asset.id}`}>QR Code</Label>
-                              <Input
-                                id={`qr-${asset.id}`}
-                                name="qr_code"
-                                defaultValue={asset.qr_code ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`year-${asset.id}`}>Year</Label>
-                              <Input
-                                id={`year-${asset.id}`}
-                                name="year"
-                                type="number"
-                                min="1990"
-                                defaultValue={asset.year ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`department-${asset.id}`}>Department</Label>
-                              <Input
-                                id={`department-${asset.id}`}
-                                name="department"
-                                defaultValue={asset.department ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`unit-${asset.id}`}>Unit</Label>
-                              <Input
-                                id={`unit-${asset.id}`}
-                                name="unit"
-                                defaultValue={asset.unit ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`user-${asset.id}`}>Assigned user</Label>
-                              <Input
-                                id={`user-${asset.id}`}
-                                name="user_name"
-                                defaultValue={asset.user_name ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`purchase-${asset.id}`}>Purchase date</Label>
-                              <Input
-                                id={`purchase-${asset.id}`}
-                                name="purchase_date"
-                                type="date"
-                                defaultValue={formatDateInput(asset.purchase_date)}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`price-${asset.id}`}>Price</Label>
-                              <Input
-                                id={`price-${asset.id}`}
-                                name="price"
-                                defaultValue={asset.price ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`supplier-${asset.id}`}>Supplier</Label>
-                              <Input
-                                id={`supplier-${asset.id}`}
-                                name="supplier"
-                                defaultValue={asset.supplier ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`source-${asset.id}`}>Source</Label>
-                              <Input
-                                id={`source-${asset.id}`}
-                                name="source"
-                                defaultValue={asset.source ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`model-${asset.id}`}>Model</Label>
-                              <Input
-                                id={`model-${asset.id}`}
-                                name="model"
-                                defaultValue={asset.model ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`serial-${asset.id}`}>Serial number</Label>
-                              <Input
-                                id={`serial-${asset.id}`}
-                                name="serial_no"
-                                defaultValue={asset.serial_no ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`processor-${asset.id}`}>Processor</Label>
-                              <Input
-                                id={`processor-${asset.id}`}
-                                name="processor"
-                                defaultValue={asset.processor ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`ram-${asset.id}`}>RAM capacity</Label>
-                              <Input
-                                id={`ram-${asset.id}`}
-                                name="ram_capacity"
-                                defaultValue={asset.ram_capacity ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`hdd-${asset.id}`}>HDD capacity</Label>
-                              <Input
-                                id={`hdd-${asset.id}`}
-                                name="hdd_capacity"
-                                defaultValue={asset.hdd_capacity ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`monitor-model-${asset.id}`}>Monitor model</Label>
-                              <Input
-                                id={`monitor-model-${asset.id}`}
-                                name="monitor_model"
-                                defaultValue={asset.monitor_model ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`monitor-serial-${asset.id}`}>Monitor serial no</Label>
-                              <Input
-                                id={`monitor-serial-${asset.id}`}
-                                name="monitor_serial_no"
-                                defaultValue={asset.monitor_serial_no ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`monitor-asset-${asset.id}`}>Monitor asset no</Label>
-                              <Input
-                                id={`monitor-asset-${asset.id}`}
-                                name="monitor_asset_no"
-                                defaultValue={asset.monitor_asset_no ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`keyboard-model-${asset.id}`}>Keyboard model</Label>
-                              <Input
-                                id={`keyboard-model-${asset.id}`}
-                                name="keyboard_model"
-                                defaultValue={asset.keyboard_model ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`keyboard-serial-${asset.id}`}>Keyboard serial no</Label>
-                              <Input
-                                id={`keyboard-serial-${asset.id}`}
-                                name="keyboard_serial_no"
-                                defaultValue={asset.keyboard_serial_no ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`keyboard-asset-${asset.id}`}>Keyboard asset no</Label>
-                              <Input
-                                id={`keyboard-asset-${asset.id}`}
-                                name="keyboard_asset_no"
-                                defaultValue={asset.keyboard_asset_no ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`mouse-model-${asset.id}`}>Mouse model</Label>
-                              <Input
-                                id={`mouse-model-${asset.id}`}
-                                name="mouse_model"
-                                defaultValue={asset.mouse_model ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`mouse-serial-${asset.id}`}>Mouse serial no</Label>
-                              <Input
-                                id={`mouse-serial-${asset.id}`}
-                                name="mouse_serial_no"
-                                defaultValue={asset.mouse_serial_no ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`mouse-asset-${asset.id}`}>Mouse asset no</Label>
-                              <Input
-                                id={`mouse-asset-${asset.id}`}
-                                name="mouse_asset_no"
-                                defaultValue={asset.mouse_asset_no ?? ''}
-                              />
-                            </div>
-                            <div className="space-y-2 md:col-span-2">
-                              <Label htmlFor={`accessories-${asset.id}`}>Accessories</Label>
-                              <Input
-                                id={`accessories-${asset.id}`}
-                                name="accessories"
-                                defaultValue={asset.accessories ?? ''}
-                              />
-                            </div>
-                            <div className="md:col-span-2 pt-4">
-                              <Button type="submit" className="w-full sm:w-auto">
-                                Update asset
-                              </Button>
-                            </div>
-                          </form>
+                              <div className="space-y-3">
+                                <h3 className="text-sm font-semibold text-foreground">
+                                  Basic information
+                                </h3>
+                                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`asset-no-${asset.id}`}>Asset ID</Label>
+                                    <Input
+                                      id={`asset-no-${asset.id}`}
+                                      name="asset_no"
+                                      defaultValue={asset.asset_no ?? ''}
+                                      className="h-11"
+                                      required
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`asset-name-${asset.id}`}>Asset name</Label>
+                                    <Input
+                                      id={`asset-name-${asset.id}`}
+                                      name="asset_name"
+                                      defaultValue={asset.asset_name ?? ''}
+                                      className="h-11"
+                                      required
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`category-${asset.id}`}>Category</Label>
+                                    <AssetCategorySelect
+                                      id={`category-${asset.id}`}
+                                      name="category_id"
+                                      categories={categories ?? []}
+                                      defaultValue={asset.category_id ?? ''}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`type-${asset.id}`}>Type</Label>
+                                    <Input
+                                      id={`type-${asset.id}`}
+                                      name="type"
+                                      defaultValue={asset.type ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`qr-${asset.id}`}>QR Code</Label>
+                                    <Input
+                                      id={`qr-${asset.id}`}
+                                      name="qr_code"
+                                      defaultValue={asset.qr_code ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`year-${asset.id}`}>Year</Label>
+                                    <Input
+                                      id={`year-${asset.id}`}
+                                      name="year"
+                                      type="number"
+                                      min="1990"
+                                      defaultValue={asset.year ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+
+                              <Separator />
+
+                              <div className="space-y-3">
+                                <h3 className="text-sm font-semibold text-foreground">
+                                  Ownership and purchase
+                                </h3>
+                                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`department-${asset.id}`}>Department</Label>
+                                    <Input
+                                      id={`department-${asset.id}`}
+                                      name="department"
+                                      defaultValue={asset.department ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`unit-${asset.id}`}>Unit</Label>
+                                    <Input
+                                      id={`unit-${asset.id}`}
+                                      name="unit"
+                                      defaultValue={asset.unit ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`user-${asset.id}`}>Assigned user</Label>
+                                    <Input
+                                      id={`user-${asset.id}`}
+                                      name="user_name"
+                                      defaultValue={asset.user_name ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`purchase-${asset.id}`}>Purchase date</Label>
+                                    <AssetDatePicker
+                                      id={`purchase-${asset.id}`}
+                                      name="purchase_date"
+                                      defaultValue={formatDateInput(asset.purchase_date)}
+                                      placeholder="Pick purchase date"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`price-${asset.id}`}>Price</Label>
+                                    <Input
+                                      id={`price-${asset.id}`}
+                                      name="price"
+                                      defaultValue={asset.price ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`supplier-${asset.id}`}>Supplier</Label>
+                                    <Input
+                                      id={`supplier-${asset.id}`}
+                                      name="supplier"
+                                      defaultValue={asset.supplier ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`source-${asset.id}`}>Source</Label>
+                                    <Input
+                                      id={`source-${asset.id}`}
+                                      name="source"
+                                      defaultValue={asset.source ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+
+                              <Separator />
+
+                              <div className="space-y-3">
+                                <h3 className="text-sm font-semibold text-foreground">
+                                  Device specifications
+                                </h3>
+                                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`model-${asset.id}`}>Model</Label>
+                                    <Input
+                                      id={`model-${asset.id}`}
+                                      name="model"
+                                      defaultValue={asset.model ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`serial-${asset.id}`}>Serial number</Label>
+                                    <Input
+                                      id={`serial-${asset.id}`}
+                                      name="serial_no"
+                                      defaultValue={asset.serial_no ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`processor-${asset.id}`}>Processor</Label>
+                                    <Input
+                                      id={`processor-${asset.id}`}
+                                      name="processor"
+                                      defaultValue={asset.processor ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`ram-${asset.id}`}>RAM capacity</Label>
+                                    <Input
+                                      id={`ram-${asset.id}`}
+                                      name="ram_capacity"
+                                      defaultValue={asset.ram_capacity ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`hdd-${asset.id}`}>HDD capacity</Label>
+                                    <Input
+                                      id={`hdd-${asset.id}`}
+                                      name="hdd_capacity"
+                                      defaultValue={asset.hdd_capacity ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+
+                              <Separator />
+
+                              <div className="space-y-3">
+                                <h3 className="text-sm font-semibold text-foreground">
+                                  Peripherals
+                                </h3>
+                                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`monitor-model-${asset.id}`}>Monitor model</Label>
+                                    <Input
+                                      id={`monitor-model-${asset.id}`}
+                                      name="monitor_model"
+                                      defaultValue={asset.monitor_model ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`monitor-serial-${asset.id}`}>Monitor serial no</Label>
+                                    <Input
+                                      id={`monitor-serial-${asset.id}`}
+                                      name="monitor_serial_no"
+                                      defaultValue={asset.monitor_serial_no ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`monitor-asset-${asset.id}`}>Monitor asset no</Label>
+                                    <Input
+                                      id={`monitor-asset-${asset.id}`}
+                                      name="monitor_asset_no"
+                                      defaultValue={asset.monitor_asset_no ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`keyboard-model-${asset.id}`}>Keyboard model</Label>
+                                    <Input
+                                      id={`keyboard-model-${asset.id}`}
+                                      name="keyboard_model"
+                                      defaultValue={asset.keyboard_model ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`keyboard-serial-${asset.id}`}>Keyboard serial no</Label>
+                                    <Input
+                                      id={`keyboard-serial-${asset.id}`}
+                                      name="keyboard_serial_no"
+                                      defaultValue={asset.keyboard_serial_no ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`keyboard-asset-${asset.id}`}>Keyboard asset no</Label>
+                                    <Input
+                                      id={`keyboard-asset-${asset.id}`}
+                                      name="keyboard_asset_no"
+                                      defaultValue={asset.keyboard_asset_no ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`mouse-model-${asset.id}`}>Mouse model</Label>
+                                    <Input
+                                      id={`mouse-model-${asset.id}`}
+                                      name="mouse_model"
+                                      defaultValue={asset.mouse_model ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`mouse-serial-${asset.id}`}>Mouse serial no</Label>
+                                    <Input
+                                      id={`mouse-serial-${asset.id}`}
+                                      name="mouse_serial_no"
+                                      defaultValue={asset.mouse_serial_no ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`mouse-asset-${asset.id}`}>Mouse asset no</Label>
+                                    <Input
+                                      id={`mouse-asset-${asset.id}`}
+                                      name="mouse_asset_no"
+                                      defaultValue={asset.mouse_asset_no ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+
+                              <Separator />
+
+                              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                <div className="space-y-2 md:col-span-2 xl:col-span-3">
+                                  <Label htmlFor={`accessories-${asset.id}`}>Accessories</Label>
+                                  <Input
+                                    id={`accessories-${asset.id}`}
+                                    name="accessories"
+                                    defaultValue={asset.accessories ?? ''}
+                                    className="h-11"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                                <Button type="submit" className="w-full sm:w-auto">
+                                  Update asset
+                                </Button>
+                              </div>
+                            </form>
                           </ScrollArea>
                         </DialogContent>
                       </Dialog>

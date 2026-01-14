@@ -28,9 +28,9 @@ export default async function StaffNotificationsPage() {
 
   const { data: notifications } = await supabase
     .from('notifications')
-    .select('id, title, message, created_at, read_at')
+    .select('id, message, type, date, read')
     .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
+    .order('date', { ascending: false })
 
   return (
     <div className="space-y-6">
@@ -54,11 +54,11 @@ export default async function StaffNotificationsPage() {
           <Card key={note.id}>
             <CardHeader className="space-y-1">
               <CardTitle className="text-base">
-                {note.title ?? 'System update'}
+                {note.type ? `${note.type} update` : 'System update'}
               </CardTitle>
               <CardDescription>
-                {note.created_at
-                  ? new Date(note.created_at).toLocaleString('en-US', {
+                {note.date
+                  ? new Date(note.date).toLocaleString('en-US', {
                       year: 'numeric',
                       month: 'short',
                       day: '2-digit',
@@ -75,4 +75,3 @@ export default async function StaffNotificationsPage() {
     </div>
   )
 }
-

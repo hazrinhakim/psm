@@ -1,16 +1,34 @@
 'use client'
 
 import {
-  ArcElement,
-  BarElement,
-  CategoryScale,
   Chart as ChartJS,
-  Legend,
+  CategoryScale,
   LinearScale,
-  LineElement,
+  BarElement,
+  ArcElement,
   PointElement,
+  LineElement,
   Tooltip,
+  Legend,
 } from 'chart.js'
+
+let chartRegistered = false
+
+if (!chartRegistered) {
+  ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    ArcElement,
+    PointElement,
+    LineElement,
+    Tooltip,
+    Legend
+  )
+  chartRegistered = true
+}
+
+import * as React from 'react'
 import { Bar, Doughnut, Line } from 'react-chartjs-2'
 import {
   Card,
@@ -19,17 +37,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  ArcElement,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Legend
-)
 
 type ChartPayload = {
   labels: string[]
@@ -58,6 +65,67 @@ export function ReportsDashboard({
   charts,
   insights,
 }: ReportsDashboardProps) {
+
+  /* ---------- MEMOIZED CHART CONFIGS ---------- */
+
+  const maintenanceTrendData = React.useMemo(() => ({
+    labels: charts.maintenanceTrend.labels,
+    datasets: [
+      {
+        label: 'Requests',
+        data: charts.maintenanceTrend.data,
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37, 99, 235, 0.2)',
+        tension: 0.35,
+      },
+    ],
+  }), [charts.maintenanceTrend])
+
+  const doughnutData = React.useMemo(() => ({
+    labels: charts.status.labels,
+    datasets: [
+      {
+        data: charts.status.data,
+        backgroundColor: [
+          '#f97316',
+          '#3b82f6',
+          '#22c55e',
+          '#94a3b8',
+        ],
+        borderWidth: 1,
+      },
+    ],
+  }), [charts.status])
+
+  const barCategoryData = React.useMemo(() => ({
+    labels: charts.category.labels,
+    datasets: [
+      {
+        label: 'Assets',
+        data: charts.category.data,
+        backgroundColor: 'rgba(14, 116, 144, 0.6)',
+      },
+    ],
+  }), [charts.category])
+
+  const barTypeData = React.useMemo(() => ({
+    labels: charts.type.labels,
+    datasets: [
+      {
+        label: 'Assets',
+        data: charts.type.data,
+        backgroundColor: 'rgba(124, 58, 237, 0.6)',
+      },
+    ],
+  }), [charts.type])
+
+  const baseOptions = React.useMemo(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+  }), [])
+
+  /* ---------- UI ---------- */
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -91,24 +159,10 @@ export function ReportsDashboard({
           </CardHeader>
           <CardContent className="h-72">
             <Line
-              data={{
-                labels: charts.maintenanceTrend.labels,
-                datasets: [
-                  {
-                    label: 'Requests',
-                    data: charts.maintenanceTrend.data,
-                    borderColor: '#2563eb',
-                    backgroundColor: 'rgba(37, 99, 235, 0.2)',
-                    tension: 0.35,
-                  },
-                ],
-              }}
+              data={maintenanceTrendData}
               options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { display: false },
-                },
+                ...baseOptions,
+                plugins: { legend: { display: false } },
               }}
             />
           </CardContent>
@@ -121,27 +175,10 @@ export function ReportsDashboard({
           </CardHeader>
           <CardContent className="h-72">
             <Doughnut
-              data={{
-                labels: charts.status.labels,
-                datasets: [
-                  {
-                    data: charts.status.data,
-                    backgroundColor: [
-                      '#f97316',
-                      '#3b82f6',
-                      '#22c55e',
-                      '#94a3b8',
-                    ],
-                    borderWidth: 1,
-                  },
-                ],
-              }}
+              data={doughnutData}
               options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { position: 'bottom' },
-                },
+                ...baseOptions,
+                plugins: { legend: { position: 'bottom' } },
               }}
             />
           </CardContent>
@@ -156,22 +193,10 @@ export function ReportsDashboard({
           </CardHeader>
           <CardContent className="h-72">
             <Bar
-              data={{
-                labels: charts.category.labels,
-                datasets: [
-                  {
-                    label: 'Assets',
-                    data: charts.category.data,
-                    backgroundColor: 'rgba(14, 116, 144, 0.6)',
-                  },
-                ],
-              }}
+              data={barCategoryData}
               options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { display: false },
-                },
+                ...baseOptions,
+                plugins: { legend: { display: false } },
               }}
             />
           </CardContent>
@@ -184,22 +209,10 @@ export function ReportsDashboard({
           </CardHeader>
           <CardContent className="h-72">
             <Bar
-              data={{
-                labels: charts.type.labels,
-                datasets: [
-                  {
-                    label: 'Assets',
-                    data: charts.type.data,
-                    backgroundColor: 'rgba(124, 58, 237, 0.6)',
-                  },
-                ],
-              }}
+              data={barTypeData}
               options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { display: false },
-                },
+                ...baseOptions,
+                plugins: { legend: { display: false } },
               }}
             />
           </CardContent>
@@ -215,26 +228,10 @@ export function ReportsDashboard({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
-            {insights.length === 0 ? (
-              <p>No insights yet. Keep collecting data.</p>
-            ) : (
-              insights.map((insight, index) => (
-                <p key={`${index}-${insight}`}>• {insight}</p>
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Feedback overview</CardTitle>
-            <CardDescription>
-              Waiting for feedback module data
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            This section will surface staff and assistant feedback trends once
-            the feedback table is available.
+            {insights.length === 0
+              ? <p>No insights yet. Keep collecting data.</p>
+              : insights.map((i, idx) => <p key={idx}>• {i}</p>)
+            }
           </CardContent>
         </Card>
       </div>

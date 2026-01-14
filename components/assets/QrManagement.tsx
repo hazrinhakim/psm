@@ -26,23 +26,28 @@ function qrImageUrl(value: string) {
   return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encoded}`
 }
 
+function qrDownloadUrl(value: string) {
+  const encoded = encodeURIComponent(value)
+  return `/api/qr?data=${encoded}`
+}
 export async function QrManagement({
   basePath,
   searchParams,
 }: {
   basePath: string
-  searchParams?: SearchParams
+  searchParams?: SearchParams | Promise<SearchParams>
 }) {
+  const resolvedSearchParams = await Promise.resolve(searchParams)
   let errorMessage: string | null = null
-  if (searchParams?.error) {
+  if (resolvedSearchParams?.error) {
     try {
-      errorMessage = decodeURIComponent(searchParams.error)
+      errorMessage = decodeURIComponent(resolvedSearchParams.error)
     } catch {
-      errorMessage = searchParams.error
+      errorMessage = resolvedSearchParams.error
     }
   }
 
-  const query = (searchParams?.q ?? '').trim()
+  const query = (resolvedSearchParams?.q ?? '').trim()
   const hasQuery = Boolean(query)
 
   const supabase = createSupabaseServerClient()
@@ -51,8 +56,10 @@ export async function QrManagement({
   if (hasQuery) {
     const { data } = await supabase
       .from('assets')
-      .select('id, asset_no, asset_name, qr_code')
-      .or(`asset_no.ilike.%${query}%,asset_name.ilike.%${query}%`)
+      .select('id, asset_no, asset_name, qr_code, asset_categories ( name )')
+      .or(
+        `asset_no.ilike.%${query}%,asset_name.ilike.%${query}%,user_name.ilike.%${query}%`
+      )
       .order('asset_name')
 
     searchResults = data ?? []
@@ -60,24 +67,25 @@ export async function QrManagement({
 
   const { data: assetsWithQr } = await supabase
     .from('assets')
-    .select('id, asset_no, asset_name, qr_code')
+    .select('id, asset_no, asset_name, qr_code, asset_categories ( name )')
     .not('qr_code', 'is', null)
     .order('asset_name')
 
   let selectedAsset =
-    searchResults.find(asset => asset.id === searchParams?.asset) ?? null
+    searchResults.find(asset => asset.id === resolvedSearchParams?.asset) ??
+    null
 
-  if (!selectedAsset && searchParams?.asset) {
+  if (!selectedAsset && resolvedSearchParams?.asset) {
     const { data } = await supabase
       .from('assets')
-      .select('id, asset_no, asset_name, qr_code')
-      .eq('id', searchParams.asset)
+      .select('id, asset_no, asset_name, qr_code, asset_categories ( name )')
+      .eq('id', resolvedSearchParams.asset)
       .maybeSingle()
 
     selectedAsset = data ?? null
   }
 
-  const showQr = Boolean(searchParams?.qr && selectedAsset)
+  const showQr = Boolean(resolvedSearchParams?.qr && selectedAsset)
   const selectedCode = selectedAsset
     ? selectedAsset.qr_code ?? selectedAsset.asset_no ?? selectedAsset.id
     : ''
@@ -85,7 +93,7 @@ export async function QrManagement({
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="text-lg font-semibold tracking-tight">
           QR Code Management
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -93,16 +101,20 @@ export async function QrManagement({
         </p>
       </div>
 
-      {(searchParams?.qr || searchParams?.error) && (
+      {(resolvedSearchParams?.qr || resolvedSearchParams?.error) && (
         <SonnerNotifier
-          title={searchParams?.error ? 'Action needed' : 'QR code updated'}
+          title={
+            resolvedSearchParams?.error
+              ? 'Action needed'
+              : 'QR code updated'
+          }
           message={
-            searchParams?.error
+            resolvedSearchParams?.error
               ? errorMessage || 'Unable to generate QR code.'
               : 'QR code stored for the selected asset.'
           }
-          variant={searchParams?.error ? 'error' : 'success'}
-          toastId={`qr-${searchParams?.error ? 'error' : 'saved'}`}
+          variant={resolvedSearchParams?.error ? 'error' : 'success'}
+          toastId={`qr-${resolvedSearchParams?.error ? 'error' : 'saved'}`}
         />
       )}
 
@@ -119,18 +131,31 @@ export async function QrManagement({
               <Label htmlFor="qr-search">Search asset</Label>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="qr-search"
                     name="q"
-                    placeholder="Search by asset ID or name"
+                    placeholder="Search by asset no, asset name or user name"
                     defaultValue={query}
-                    className="pl-9"
+                    className="h-11 rounded-full border-muted pl-11 pr-4 shadow-sm focus-visible:ring-2 focus-visible:ring-offset-0"
                   />
                 </div>
-                <Button type="submit" variant="outline" className="shrink-0">
-                  Search
-                </Button>
+                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
+                  <Button
+                    type="submit"
+                    className="h-11 w-full rounded-full gap-2 sm:w-auto"
+                  >
+                    <Search className="h-4 w-4" />
+                    Search
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="h-11 w-full rounded-full sm:w-auto"
+                  >
+                    <a href={basePath + '/qr'}>Clear</a>
+                  </Button>
+                </div>
               </div>
               <p className="text-xs text-muted-foreground">
                 Search first to unlock the generate button.
@@ -145,7 +170,7 @@ export async function QrManagement({
                 <QrAssetSelect
                   id="asset-select"
                   assets={searchResults}
-                  defaultValue={searchParams?.asset ?? ''}
+                  defaultValue={resolvedSearchParams?.asset ?? ''}
                   disabled={!hasQuery || searchResults.length === 0}
                   placeholder={
                     hasQuery ? 'Choose an asset' : 'Search to view assets'
@@ -182,9 +207,7 @@ export async function QrManagement({
                   </div>
                   <Button asChild>
                     <a
-                      href={qrImageUrl(selectedCode)}
-                      target="_blank"
-                      rel="noreferrer"
+                      href={qrDownloadUrl(selectedCode)}
                     >
                       Download QR Code
                     </a>
@@ -241,9 +264,7 @@ export async function QrManagement({
           {/* RIGHT BUTTON */}
           <Button asChild variant="outline" size="sm" className="shrink-0">
             <a
-              href={qrImageUrl(code)}
-              target="_blank"
-              rel="noreferrer"
+              href={qrDownloadUrl(code)}
             >
               Download
             </a>

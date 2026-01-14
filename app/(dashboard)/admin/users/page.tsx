@@ -7,14 +7,23 @@ import {
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { SonnerNotifier } from '@/components/ui/sonner-notifier'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
 import { createSupabaseAdminClient } from '@/lib/supabaseAdmin'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
-import { deleteUser, inviteUser, updateUserRole } from './actions'
+import { deleteUser, updateUserRole } from './actions'
 import { normalizeRole } from '@/lib/roles'
-import { Search, Trash2, UserPlus, Pencil } from 'lucide-react'
+import { Search, Trash2, Pencil } from 'lucide-react'
+import { InviteUserDialog } from './InviteUserDialog'
 
 type SearchParams = {
   invited?: string
@@ -22,6 +31,7 @@ type SearchParams = {
   deleted?: string
   error?: string
   q?: string
+  page?: string
 }
 
 function getLoginId(email?: string | null, fallback?: string | null) {
@@ -47,8 +57,9 @@ function getRoleBadgeClass(role: string) {
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams?: SearchParams
+  searchParams?: SearchParams | Promise<SearchParams>
 }) {
+  const resolvedSearchParams = await Promise.resolve(searchParams)
   const supabase = createSupabaseAdminClient()
   const supabaseServer = createSupabaseServerClient()
   const {
@@ -61,17 +72,22 @@ export default async function AdminUsersPage({
         .eq('id', user.id)
         .maybeSingle()
     : { data: null }
-  const invited = searchParams?.invited === '1'
-  const updated = searchParams?.updated === '1'
-  const deleted = searchParams?.deleted === '1'
-  const query = (searchParams?.q ?? '').trim().toLowerCase()
+  const invited = resolvedSearchParams?.invited === '1'
+  const updated = resolvedSearchParams?.updated === '1'
+  const deleted = resolvedSearchParams?.deleted === '1'
+  const query = (resolvedSearchParams?.q ?? '').trim().toLowerCase()
+  const pageSize = 10
+  const currentPage = Math.max(
+    1,
+    Number.parseInt(resolvedSearchParams?.page ?? '1', 10) || 1
+  )
   let errorMessage: string | undefined
 
-  if (searchParams?.error) {
+  if (resolvedSearchParams?.error) {
     try {
-      errorMessage = decodeURIComponent(searchParams.error)
+      errorMessage = decodeURIComponent(resolvedSearchParams.error)
     } catch {
-      errorMessage = searchParams.error
+      errorMessage = resolvedSearchParams.error
     }
   }
 
@@ -111,11 +127,16 @@ export default async function AdminUsersPage({
   }
 
   const { data, error } = await supabase.auth.admin.listUsers({
-    perPage: 100,
-    page: 1,
+    perPage: pageSize,
+    page: currentPage,
   })
 
   const users = data?.users ?? []
+  const totalUsers =
+    data && 'total' in data
+      ? Number(data.total ?? users.length)
+      : users.length
+  const totalPages = Math.max(1, Math.ceil(totalUsers / pageSize))
   const userIds = users.map(user => user.id)
   const { data: profiles } = userIds.length
     ? await supabase
@@ -160,33 +181,28 @@ export default async function AdminUsersPage({
     : users
 
   const displayName = profile?.full_name ?? 'Admin User'
+  const baseQuery = new URLSearchParams()
+  if (resolvedSearchParams?.q) {
+    baseQuery.set('q', resolvedSearchParams.q)
+  }
+  const pageHref = (page: number) => {
+    const params = new URLSearchParams(baseQuery)
+    params.set('page', String(page))
+    return `?${params.toString()}`
+  }
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          User Management
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Welcome back, {displayName}.
-        </p>
-      </div>
-
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold tracking-tight">
-            Manage users
+            User Management
           </h2>
           <p className="text-sm text-muted-foreground">
             Manage system users and their roles.
           </p>
         </div>
-        <Button asChild className="gap-2">
-          <a href="#invite">
-            <UserPlus className="h-4 w-4" />
-            Add User
-          </a>
-        </Button>
+        <InviteUserDialog />
       </div>
 
       {(invited || updated || deleted || errorMessage || error) && (
@@ -220,66 +236,37 @@ export default async function AdminUsersPage({
         />
       )}
 
-      <Card id="invite">
-        <CardHeader>
-          <CardTitle>Invite a user</CardTitle>
-          <CardDescription>
-            Send an email invite to create a new account.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form
-            action={inviteUser}
-            className="grid gap-3 sm:grid-cols-[1fr_180px_auto] sm:items-end"
-          >
-            <div className="space-y-2">
-              <Label htmlFor="invite-email">Email</Label>
-              <Input
-                id="invite-email"
-                name="email"
-                type="email"
-                placeholder="user@company.com"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="invite-role">Role</Label>
-              <select
-                id="invite-role"
-                name="role"
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                defaultValue="staff"
-              >
-                <option value="admin">Admin</option>
-                <option value="admin_assistant">Admin Assistant</option>
-                <option value="staff">Staff</option>
-              </select>
-            </div>
-            <Button type="submit" className="w-full sm:w-auto">
-              Send invite
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
 
-      <Card>
         <CardContent className="pt-6">
-          <form method="get" className="flex w-full items-center gap-3">
+          <form
+            method="get"
+            className="flex w-full flex-col gap-3 sm:flex-row sm:items-center"
+          >
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 name="q"
                 placeholder="Search users..."
                 defaultValue={query}
-                className="pl-9"
+                className="h-11 rounded-full border-muted pl-11 pr-4 shadow-sm focus-visible:ring-2 focus-visible:ring-offset-0"
               />
             </div>
-            <Button type="submit" variant="outline">
-              Search
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button type="submit" className="h-11 rounded-full gap-2">
+                <Search className="h-4 w-4" />
+                Search
+              </Button>
+              <Button
+                asChild
+                variant="ghost"
+                className="h-11 rounded-full"
+              >
+                <a href="?">Clear</a>
+              </Button>
+            </div>
           </form>
         </CardContent>
-      </Card>
+
 
       <Card>
         <CardHeader>
@@ -294,7 +281,6 @@ export default async function AdminUsersPage({
           <table className="w-full text-sm">
             <thead className="text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               <tr className="border-b">
-                <th className="py-3 pr-3 font-medium">Login ID</th>
                 <th className="py-3 pr-3 font-medium">Name</th>
                 <th className="py-3 pr-3 font-medium">Email</th>
                 <th className="py-3 pr-3 font-medium">Role</th>
@@ -310,16 +296,9 @@ export default async function AdminUsersPage({
                   user.user_metadata?.name ||
                   '-'
                 const role = profileEntry?.role ?? 'staff'
-                const loginId = getLoginId(
-                  user.email,
-                  user.user_metadata?.username ?? null
-                )
 
                 return (
                   <tr key={user.id} className="border-b last:border-b-0">
-                    <td className="py-4 pr-3 font-medium text-foreground">
-                      {loginId}
-                    </td>
                     <td className="py-4 pr-3">{name}</td>
                     <td className="py-4 pr-3">{user.email ?? '-'}</td>
                     <td className="py-4 pr-3">
@@ -370,6 +349,80 @@ export default async function AdminUsersPage({
           </table>
         </CardContent>
       </Card>
+
+      {totalPages > 1 && (
+        <Pagination className="pt-2">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href={pageHref(Math.max(1, currentPage - 1))}
+                className={currentPage === 1 ? 'pointer-events-none opacity-50' : undefined}
+              />
+            </PaginationItem>
+            {totalPages <= 5 ? (
+              Array.from({ length: totalPages }, (_, index) => {
+                const page = index + 1
+                return (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      href={pageHref(page)}
+                      isActive={page === currentPage}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                )
+              })
+            ) : (
+              <>
+                <PaginationItem>
+                  <PaginationLink
+                    href={pageHref(1)}
+                    isActive={currentPage === 1}
+                  >
+                    1
+                  </PaginationLink>
+                </PaginationItem>
+                {currentPage > 3 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+                {currentPage > 2 && currentPage < totalPages && (
+                  <PaginationItem>
+                    <PaginationLink href={pageHref(currentPage)} isActive>
+                      {currentPage}
+                    </PaginationLink>
+                  </PaginationItem>
+                )}
+                {currentPage < totalPages - 2 && (
+                  <PaginationItem>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )}
+                <PaginationItem>
+                  <PaginationLink
+                    href={pageHref(totalPages)}
+                    isActive={currentPage === totalPages}
+                  >
+                    {totalPages}
+                  </PaginationLink>
+                </PaginationItem>
+              </>
+            )}
+            <PaginationItem>
+              <PaginationNext
+                href={pageHref(Math.min(totalPages, currentPage + 1))}
+                className={
+                  currentPage === totalPages
+                    ? 'pointer-events-none opacity-50'
+                    : undefined
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   )
 }

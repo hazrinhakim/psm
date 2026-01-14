@@ -79,18 +79,9 @@ export default async function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Dashboard
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Welcome back, {userName}.
-        </p>
-      </div>
-
       <div className="space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">
-          Welcome to ICAMS
+          Dashboard
         </h2>
         <p className="text-sm text-muted-foreground">
           Here is an overview of your asset management system.
@@ -107,7 +98,7 @@ export default async function AdminDashboard() {
                   <div
                     className={`flex h-11 w-11 items-center justify-center rounded-xl ${stat.iconStyles}`}
                   >
-                    <Icon className="h-5 w-5" />
+                    <Icon className="h-8 w-8" />
                   </div>
                 </div>
                 <div className="mt-4 text-3xl font-semibold tracking-tight">

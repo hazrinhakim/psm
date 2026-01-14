@@ -192,18 +192,18 @@ export async function MaintenanceList({
             className="flex flex-col gap-3 lg:flex-row lg:items-center"
           >
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 name="q"
                 placeholder="Search requests..."
                 defaultValue={query}
-                className="pl-9"
+                className="h-11 rounded-full border-muted pl-11 pr-4 shadow-sm focus-visible:ring-2 focus-visible:ring-offset-0"
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <select
                 name="status"
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                className="h-11 rounded-full border border-input bg-background px-4 text-sm"
                 defaultValue={statusFilter}
               >
                 <option value="all">All Status</option>
@@ -211,9 +211,15 @@ export async function MaintenanceList({
                 <option value="in_progress">In Progress</option>
                 <option value="completed">Completed</option>
               </select>
-              <Button type="submit" variant="outline">
-                Filter
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button type="submit" className="h-11 rounded-full gap-2">
+                  <Search className="h-4 w-4" />
+                  Filter
+                </Button>
+                <Button asChild variant="ghost" className="h-11 rounded-full">
+                  <a href={basePath + '/maintenance'}>Clear</a>
+                </Button>
+              </div>
             </div>
           </form>
         </CardContent>
