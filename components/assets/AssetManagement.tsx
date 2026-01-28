@@ -25,8 +25,9 @@ import { createAsset, deleteAsset, updateAsset } from '@/lib/assetActions'
 import { normalizeRole } from '@/lib/roles'
 import { AssetScanDialogButton } from '@/components/assets/AssetScanDialogButton'
 import {
-  AssetCategorySelect,
+  AssetCategoryTypeFields,
   AssetDatePicker,
+  AssetYearPicker,
 } from '@/components/assets/AssetFormControls'
 import {
   MapPin,
@@ -320,6 +321,9 @@ export async function AssetManagement({
     } catch {
       errorMessage = searchParams.error
     }
+    if (errorMessage === 'assignee_not_found') {
+      errorMessage = 'Assigned user must match a signed-in profile.'
+    }
   }
 
   const query = (searchParams?.q ?? '').trim().toLowerCase()
@@ -400,6 +404,17 @@ export async function AssetManagement({
         .order('name')
     : { data: [] }
 
+  const { data: assignees } = canManage
+    ? await supabase
+        .from('profiles')
+        .select('full_name')
+        .not('full_name', 'is', null)
+    : { data: [] }
+
+  const assigneeNames = Array.from(
+    new Set((assignees ?? []).map(entry => entry.full_name).filter(Boolean))
+  )
+
   const shouldGateResults = canManage && !query
   const filteredAssets = shouldGateResults
     ? []
@@ -429,10 +444,17 @@ export async function AssetManagement({
   const { count: maintenanceCount } = await supabase
     .from('maintenance_requests')
     .select('id', { count: 'exact', head: true })
-    .in('status', ['pending', 'in_progress'])
+    .in('status', ['Pending', 'In Progress'])
 
   return (
     <div className="space-y-6">
+      {assigneeNames.length > 0 && (
+        <datalist id="assignee-list">
+          {assigneeNames.map(name => (
+            <option key={name} value={name} />
+          ))}
+        </datalist>
+      )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold tracking-tight">
@@ -473,25 +495,22 @@ export async function AssetManagement({
                         <Label htmlFor="asset-name">Asset name</Label>
                         <Input id="asset-name" name="asset_name" placeholder="Dell Latitude 5420" className="h-11" required />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="category-id">Category</Label>
-                        <AssetCategorySelect
-                          id="category-id"
-                          name="category_id"
-                          categories={categories ?? []}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="asset-type">Type</Label>
-                        <Input id="asset-type" name="type" placeholder="Laptop / Printer / Server" className="h-11" />
-                      </div>
+                      <AssetCategoryTypeFields
+                        categories={categories ?? []}
+                        categoryId="category-id"
+                        typeName="asset-type"
+                      />
                       <div className="space-y-2">
                         <Label htmlFor="asset-qr">QR Code</Label>
                         <Input id="asset-qr" name="qr_code" placeholder="QR-001 (optional)" className="h-11" />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="asset-year">Year</Label>
-                        <Input id="asset-year" name="year" type="number" min="1990" placeholder="2024" className="h-11" />
+                        <AssetYearPicker
+                          id="asset-year"
+                          name="year"
+                          placeholder="Pick year"
+                        />
                       </div>
                     </div>
                   </div>
@@ -513,7 +532,16 @@ export async function AssetManagement({
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="asset-user">Assigned User</Label>
-                        <Input id="asset-user" name="user_name" placeholder="Jane Doe" className="h-11" />
+                        <Input
+                          id="asset-user"
+                          name="user_name"
+                          placeholder="Search signed-in user"
+                          list={assigneeNames.length ? 'assignee-list' : undefined}
+                          className="h-11"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Must match a signed-in user profile.
+                        </p>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="purchase-date">Purchase date</Label>
@@ -839,24 +867,13 @@ export async function AssetManagement({
                                       required
                                     />
                                   </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor={`category-${asset.id}`}>Category</Label>
-                                    <AssetCategorySelect
-                                      id={`category-${asset.id}`}
-                                      name="category_id"
-                                      categories={categories ?? []}
-                                      defaultValue={asset.category_id ?? ''}
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor={`type-${asset.id}`}>Type</Label>
-                                    <Input
-                                      id={`type-${asset.id}`}
-                                      name="type"
-                                      defaultValue={asset.type ?? ''}
-                                      className="h-11"
-                                    />
-                                  </div>
+                                  <AssetCategoryTypeFields
+                                    categories={categories ?? []}
+                                    categoryId={`category-${asset.id}`}
+                                    typeName={`type-${asset.id}`}
+                                    defaultCategoryId={asset.category_id ?? ''}
+                                    defaultType={asset.type ?? ''}
+                                  />
                                   <div className="space-y-2">
                                     <Label htmlFor={`qr-${asset.id}`}>QR Code</Label>
                                     <Input
@@ -868,13 +885,11 @@ export async function AssetManagement({
                                   </div>
                                   <div className="space-y-2">
                                     <Label htmlFor={`year-${asset.id}`}>Year</Label>
-                                    <Input
+                                    <AssetYearPicker
                                       id={`year-${asset.id}`}
                                       name="year"
-                                      type="number"
-                                      min="1990"
                                       defaultValue={asset.year ?? ''}
-                                      className="h-11"
+                                      placeholder="Pick year"
                                     />
                                   </div>
                                 </div>
@@ -911,8 +926,12 @@ export async function AssetManagement({
                                       id={`user-${asset.id}`}
                                       name="user_name"
                                       defaultValue={asset.user_name ?? ''}
+                                      list={assigneeNames.length ? 'assignee-list' : undefined}
                                       className="h-11"
                                     />
+                                    <p className="text-xs text-muted-foreground">
+                                      Must match a signed-in user profile.
+                                    </p>
                                   </div>
                                   <div className="space-y-2">
                                     <Label htmlFor={`purchase-${asset.id}`}>Purchase date</Label>

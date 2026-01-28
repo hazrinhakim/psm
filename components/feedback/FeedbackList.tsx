@@ -1,10 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { FeedbackItem } from '@/components/feedback/FeedbackItem'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 import { createSupabaseAdminClient } from '@/lib/supabaseAdmin'
 
@@ -37,6 +31,23 @@ export async function FeedbackList() {
 
   const adminClient = createSupabaseAdminClient()
   const client = adminClient ?? supabase
+
+  const { data: unreadNotifications } = await supabase
+    .from('notifications')
+    .select('message')
+    .eq('user_id', user.id)
+    .eq('type', 'general')
+    .eq('read', false)
+
+  const unreadFeedbackIds = new Set(
+    (unreadNotifications ?? [])
+      .map(note => {
+        const message = note.message ?? ''
+        const match = message.match(/\[feedback:([a-f0-9-]+)\]/i)
+        return match ? match[1] : null
+      })
+      .filter(Boolean)
+  )
 
   const { data: feedback, error } = await client
     .from('feedback')
@@ -99,6 +110,15 @@ export async function FeedbackList() {
     })
   }
 
+  const getDisplayName = (entry: any) =>
+    profileMap.get(entry.created_by) ??
+    entry.email ??
+    emailMap.get(entry.created_by) ??
+    'Staff member'
+
+  const getDisplayEmail = (entry: any) =>
+    entry.email ?? emailMap.get(entry.created_by) ?? null
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -117,39 +137,40 @@ export async function FeedbackList() {
       )}
 
       <div className="grid gap-4">
-        {feedback?.map((entry: any) => (
-          <Card key={entry.id}>
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-base">
-                Feedback
-              </CardTitle>
-              <CardDescription>
-                {profileMap.get(entry.created_by) ??
-                  entry.email ??
-                  emailMap.get(entry.created_by) ??
-                  'Staff member'}{' '}
-                {entry.email
-                  ? `(${entry.email})`
-                  : emailMap.get(entry.created_by)
-                    ? `(${emailMap.get(entry.created_by)})`
-                  : ''}{' '}
-                · {entry.role ?? 'staff'}
-              </CardDescription>
-              <CardDescription>
-                {entry.created_at
-                  ? new Date(entry.created_at).toLocaleString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: '2-digit',
-                    })
-                  : 'Date unavailable'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              {entry.message}
-            </CardContent>
-          </Card>
-        ))}
+        {feedback?.map((entry: any) => {
+          const displayName = getDisplayName(entry)
+          const displayEmail = getDisplayEmail(entry)
+          const dateLabel = entry.created_at
+            ? new Date(entry.created_at).toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: '2-digit',
+              })
+            : 'Date unavailable'
+          const detailDateLabel = entry.created_at
+            ? new Date(entry.created_at).toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : 'Date unavailable'
+
+          return (
+            <FeedbackItem
+              key={entry.id}
+              name={displayName}
+              email={displayEmail}
+              role={entry.role ?? 'staff'}
+              dateLabel={dateLabel}
+              detailDateLabel={detailDateLabel}
+              message={entry.message}
+              isUnread={unreadFeedbackIds.has(entry.id)}
+              feedbackId={entry.id}
+            />
+          )
+        })}
       </div>
     </div>
   )

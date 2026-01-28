@@ -133,8 +133,8 @@ export function ReportsDashboard({
           ['Total assets', metrics.totalAssets],
           ['Maintenance requests', metrics.totalRequests],
           ['Pending', metrics.pendingRequests],
-          ['In progress', metrics.inProgressRequests],
-          ['Completed', metrics.completedRequests],
+          ['In Progress', metrics.inProgressRequests],
+          ['Resolved', metrics.completedRequests],
         ].map(([label, value]) => (
           <Card key={label}>
             <CardHeader className="pb-2">

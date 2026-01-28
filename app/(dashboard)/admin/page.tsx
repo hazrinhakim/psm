@@ -1,4 +1,5 @@
 import { AnimatedCount } from '@/components/dashboard/AnimatedCount'
+import { RealtimeFeedbackCount } from '@/components/dashboard/RealtimeFeedbackCount'
 import { getDashboardStats } from '@/lib/dashboardStats'
 import {
   Card,
@@ -29,6 +30,7 @@ export default async function AdminDashboard() {
 
   const statCards = [
     {
+      key: 'total',
       label: 'Total Assets',
       value: totalAssets,
       description: 'All registered items',
@@ -36,6 +38,7 @@ export default async function AdminDashboard() {
       iconStyles: 'bg-blue-50 text-blue-600',
     },
     {
+      key: 'active',
       label: 'Active Assets',
       value: activeAssets,
       description: 'Assigned to staff',
@@ -43,6 +46,7 @@ export default async function AdminDashboard() {
       iconStyles: 'bg-emerald-50 text-emerald-600',
     },
     {
+      key: 'maintenance',
       label: 'Pending Maintenance',
       value: pendingMaintenance,
       description: 'Awaiting action',
@@ -50,6 +54,7 @@ export default async function AdminDashboard() {
       iconStyles: 'bg-amber-50 text-amber-600',
     },
     {
+      key: 'feedback',
       label: 'New Feedback',
       value: feedbackCount,
       description: 'Latest staff input',
@@ -102,7 +107,11 @@ export default async function AdminDashboard() {
                   </div>
                 </div>
                 <div className="mt-4 text-3xl font-semibold tracking-tight">
-                  <AnimatedCount value={stat.value} />
+                  {stat.key === 'feedback' ? (
+                    <RealtimeFeedbackCount initialCount={stat.value} />
+                  ) : (
+                    <AnimatedCount value={stat.value} />
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {stat.label}
@@ -151,7 +160,7 @@ export default async function AdminDashboard() {
                 </div>
                 <div className="text-right">
                   <Badge variant="secondary" className="capitalize">
-                    {String(request.status ?? 'pending').replace('_', ' ')}
+                    {String(request.status ?? 'Pending').replace('_', ' ')}
                   </Badge>
                   <p className="mt-2 text-xs text-muted-foreground">
                     {request.created_at

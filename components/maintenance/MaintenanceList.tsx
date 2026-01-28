@@ -89,13 +89,13 @@ export async function MaintenanceList({
 
   const totalCount = allRequests.length
   const pendingCount = allRequests.filter(
-    (request: any) => request.status === 'pending'
+    (request: any) => request.status === 'Pending'
   ).length
   const inProgressCount = allRequests.filter(
-    (request: any) => request.status === 'in_progress'
+    (request: any) => request.status === 'In Progress'
   ).length
   const completedCount = allRequests.filter(
-    (request: any) => request.status === 'completed'
+    (request: any) => request.status === 'Resolved'
   ).length
 
   const displayName = profile?.full_name ?? 'Admin User'
@@ -103,17 +103,8 @@ export async function MaintenanceList({
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Maintenance
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Welcome back, {displayName}
-        </p>
-      </div>
-
-      <div className="space-y-1">
         <h2 className="text-lg font-semibold tracking-tight">
-          Maintenance Management
+          Maintenance Request Management
         </h2>
         <p className="text-sm text-muted-foreground">
           Review and manage maintenance requests.
@@ -173,7 +164,7 @@ export async function MaintenanceList({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Completed
+              Resolved
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -207,9 +198,9 @@ export async function MaintenanceList({
                 defaultValue={statusFilter}
               >
                 <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Resolved">Resolved</option>
               </select>
               <div className="flex items-center gap-2">
                 <Button type="submit" className="h-11 rounded-full gap-2">
@@ -256,11 +247,11 @@ export async function MaintenanceList({
                 <select
                   name="status"
                   className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                  defaultValue={r.status ?? 'pending'}
+                  defaultValue={r.status ?? 'Pending'}
                 >
-                  <option value="pending">Pending</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed</option>
+                  <option value="Pending">Pending</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Resolved">Resolved</option>
                 </select>
                 <Button type="submit" variant="outline" size="sm">
                   Update status

@@ -1,9 +1,11 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CalendarIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Popover,
   PopoverContent,
@@ -55,6 +57,14 @@ function parseInputDate(value?: string | null) {
   return date
 }
 
+function parseYear(value?: string | null) {
+  if (!value) {
+    return undefined
+  }
+  const year = Number.parseInt(value, 10)
+  return Number.isNaN(year) ? undefined : year
+}
+
 export function AssetCategorySelect({
   id,
   name,
@@ -91,6 +101,91 @@ export function AssetCategorySelect({
         </SelectContent>
       </Select>
     </div>
+  )
+}
+
+export function AssetCategoryTypeFields({
+  categories,
+  categoryId,
+  typeName,
+  categoryPlaceholder = 'Select category',
+  defaultCategoryId,
+  defaultType,
+  typePlaceholder = 'Auto from category',
+}: {
+  categories: Category[]
+  categoryId: string
+  typeName: string
+  categoryPlaceholder?: string
+  defaultCategoryId?: string | null
+  defaultType?: string | null
+  typePlaceholder?: string
+}) {
+  const categoryMap = useMemo(
+    () => new Map(categories.map(category => [category.id, category.name])),
+    [categories]
+  )
+  const [categoryValue, setCategoryValue] = useState(
+    defaultCategoryId ?? 'none'
+  )
+  const [typeValue, setTypeValue] = useState(defaultType ?? '')
+
+  const syncType = (nextCategoryId: string) => {
+    if (nextCategoryId === 'none') {
+      setTypeValue('')
+      return
+    }
+    const label = categoryMap.get(nextCategoryId) ?? ''
+    setTypeValue(label)
+  }
+
+  useEffect(() => {
+    syncType(categoryValue)
+  }, [categoryValue, categoryMap])
+
+  return (
+    <>
+      <div className="space-y-2">
+        <Label htmlFor={categoryId}>Category</Label>
+        <div>
+          <input
+            type="hidden"
+            name="category_id"
+            value={categoryValue === 'none' ? '' : categoryValue}
+          />
+          <Select
+            value={categoryValue}
+            onValueChange={value => {
+              setCategoryValue(value)
+              syncType(value)
+            }}
+          >
+            <SelectTrigger id={categoryId} className="h-11 w-full">
+              <SelectValue placeholder={categoryPlaceholder} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Uncategorized</SelectItem>
+              {categories.map(category => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={typeName}>Type</Label>
+        <Input
+          id={typeName}
+          name="type"
+          value={typeValue}
+          readOnly
+          placeholder={typePlaceholder}
+          className="h-11"
+        />
+      </div>
+    </>
   )
 }
 
@@ -136,6 +231,76 @@ export function AssetDatePicker({
             onSelect={setDate}
             initialFocus
           />
+        </PopoverContent>
+      </Popover>
+    </div>
+  )
+}
+
+export function AssetYearPicker({
+  id,
+  name,
+  defaultValue,
+  placeholder,
+  startYear = 1990,
+  endYear,
+}: {
+  id: string
+  name: string
+  defaultValue?: string | null
+  placeholder?: string
+  startYear?: number
+  endYear?: number
+}) {
+  const currentYear = new Date().getFullYear()
+  const finalEndYear = endYear ?? currentYear
+  const initialYear = useMemo(
+    () => parseYear(defaultValue),
+    [defaultValue]
+  )
+  const [year, setYear] = useState<number | undefined>(initialYear)
+  const years = useMemo(() => {
+    const list = []
+    for (let y = finalEndYear; y >= startYear; y -= 1) {
+      list.push(y)
+    }
+    return list
+  }, [finalEndYear, startYear])
+
+  return (
+    <div>
+      <input type="hidden" name={name} value={year ? String(year) : ''} />
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
+            type="button"
+            variant="outline"
+            className={cn(
+              'h-11 w-full justify-start text-left font-normal',
+              !year && 'text-muted-foreground'
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {year ? String(year) : placeholder ?? 'Pick year'}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-60 p-0" align="start">
+          <div className="max-h-64 overflow-y-auto p-2">
+            <div className="grid grid-cols-4 gap-2">
+              {years.map(item => (
+                <Button
+                  key={item}
+                  type="button"
+                  variant={item === year ? 'default' : 'ghost'}
+                  className="h-9"
+                  onClick={() => setYear(item)}
+                >
+                  {item}
+                </Button>
+              ))}
+            </div>
+          </div>
         </PopoverContent>
       </Popover>
     </div>

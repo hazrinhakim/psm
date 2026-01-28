@@ -1,18 +1,24 @@
-import 'server-only'
-
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export function createSupabaseServerClient() {
+export const createSupabaseServerClient = () => {
+  const cookieStore = cookies()
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll: async () => (await cookies()).getAll(),
-        setAll: () => {},
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set() {
+          // The `set` method is intentionally left empty for server components.
+        },
+        remove() {
+          // The `remove` method is intentionally left empty for server components.
+        },
       },
     }
   )
 }
-

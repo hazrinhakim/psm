@@ -1,6 +1,7 @@
 'use client'
 
 import { SidebarTrigger } from '@/components/ui/sidebar'
+import { NotificationsBell } from '@/components/dashboard/NotificationsBell'
 
 export function Header() {
   return (
@@ -10,6 +11,9 @@ export function Header() {
         <span className="text-sm font-medium text-muted-foreground">
           ICT Asset Management System
         </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <NotificationsBell />
       </div>
     </header>
   )

@@ -58,9 +58,9 @@ export async function ReportsOverview() {
 
   const totalAssets = assets?.length ?? 0
   const totalRequests = requests?.length ?? 0
-  const pendingRequests = statusCounts.pending ?? 0
-  const inProgressRequests = statusCounts.in_progress ?? 0
-  const completedRequests = statusCounts.completed ?? 0
+  const pendingRequests = statusCounts['Pending'] ?? 0
+  const inProgressRequests = statusCounts['In Progress'] ?? 0
+  const completedRequests = statusCounts['Resolved'] ?? 0
 
   const months = buildLastSixMonths()
   const monthCounts = months.reduce<Record<string, number>>((acc, month) => {

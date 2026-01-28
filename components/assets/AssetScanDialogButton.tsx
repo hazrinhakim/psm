@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -26,6 +25,9 @@ export function AssetScanDialogButton({ basePath }: { basePath: string }) {
         </Button>
       </DialogTrigger>
       <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="sr-only">Scan asset QR</DialogTitle>
+        </DialogHeader>
         <ScrollArea>
           <AssetScan
             scanBasePath={`${basePath}/scan`}

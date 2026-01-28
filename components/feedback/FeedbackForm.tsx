@@ -10,7 +10,7 @@ import { toast } from "sonner"
 import { Spinner } from "@/components/ui/spinner"
 
 type FeedbackFormProps = {
-  role: "staff" | "assistant"
+  role: 'staff' | 'admin_assistant'
   heading?: string
   description?: string
 }
@@ -40,18 +40,35 @@ export function FeedbackForm({
       return
     }
 
-    const { error } = await supabase.from("feedback").insert({
-      message,
-      role,
-      created_by: user.id,
-      email: user.email ?? null,
-    })
+    const { data: feedbackRow, error } = await supabase
+      .from('feedback')
+      .insert({
+        message,
+        role,
+        created_by: user.id,
+        email: user.email ?? null,
+      })
+      .select('id')
+      .single()
 
     if (error) {
       setStatus(error.message)
       toast.error(error.message)
       setLoading(false)
       return
+    }
+
+    try {
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind: 'feedback',
+          feedbackId: feedbackRow?.id ?? null,
+        }),
+      })
+    } catch (notifyError) {
+      console.error("Failed to send notification:", notifyError)
     }
 
     setMessage("")

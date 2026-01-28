@@ -1,6 +1,8 @@
 import { createSupabaseServerClient } from './supabaseServer'
 
-export async function getDashboardStats() {
+type DashboardScope = 'all' | 'assigned'
+
+export async function getDashboardStats(scope: DashboardScope = 'all') {
   const supabase = createSupabaseServerClient()
 
   const {
@@ -15,31 +17,71 @@ export async function getDashboardStats() {
         .maybeSingle()
     : { data: null }
 
-  const { count: totalAssets } = await supabase
+  const isScoped = scope === 'assigned'
+  const assignee = profile?.full_name?.trim()
+  const userId = user?.id ?? '00000000-0000-0000-0000-000000000000'
+  const assigneeMatch = assignee || '__missing__'
+
+  let totalAssetsQuery = supabase
     .from('assets')
     .select('id', { count: 'exact', head: true })
+  if (isScoped) {
+    totalAssetsQuery = totalAssetsQuery.eq('user_name', assigneeMatch)
+  }
+  const { count: totalAssets } = await totalAssetsQuery
 
-  const { count: activeAssets } = await supabase
-    .from('assets')
-    .select('id', { count: 'exact', head: true })
-    .not('user_name', 'is', null)
-    .neq('user_name', '')
+  const { count: activeAssets } = isScoped
+    ? await supabase
+        .from('assets')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_name', assigneeMatch)
+    : await supabase
+        .from('assets')
+        .select('id', { count: 'exact', head: true })
+        .not('user_name', 'is', null)
+        .neq('user_name', '')
 
-  const { count: pendingMaintenance } = await supabase
+  let pendingMaintenanceQuery = supabase
     .from('maintenance_requests')
     .select('id', { count: 'exact', head: true })
-    .eq('status', 'pending')
+    .eq('status', 'Pending')
+  if (isScoped) {
+    pendingMaintenanceQuery = pendingMaintenanceQuery.eq('requested_by', userId)
+  }
+  const { count: pendingMaintenance } = await pendingMaintenanceQuery
 
-  const { count: inProgressMaintenance } = await supabase
+  let inProgressMaintenanceQuery = supabase
     .from('maintenance_requests')
     .select('id', { count: 'exact', head: true })
-    .eq('status', 'in_progress')
+    .eq('status', 'In Progress')
+  if (isScoped) {
+    inProgressMaintenanceQuery = inProgressMaintenanceQuery.eq(
+      'requested_by',
+      userId
+    )
+  }
+  const { count: inProgressMaintenance } = await inProgressMaintenanceQuery
+
+  let completedMaintenanceQuery = supabase
+    .from('maintenance_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'Resolved')
+  if (isScoped) {
+    completedMaintenanceQuery = completedMaintenanceQuery.eq(
+      'requested_by',
+      userId
+    )
+  }
+  const { count: completedMaintenance } = await completedMaintenanceQuery
 
   const { count: feedbackCount } = await supabase
-    .from('feedback')
+    .from('notifications')
     .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('type', 'general')
+    .eq('read', false)
 
-  const { data: recentMaintenance } = await supabase
+  let recentMaintenanceQuery = supabase
     .from('maintenance_requests')
     .select(
       `
@@ -52,6 +94,10 @@ export async function getDashboardStats() {
     )
     .order('created_at', { ascending: false })
     .limit(3)
+  if (isScoped) {
+    recentMaintenanceQuery = recentMaintenanceQuery.eq('requested_by', userId)
+  }
+  const { data: recentMaintenance } = await recentMaintenanceQuery
 
   const total = totalAssets ?? 0
   const active = activeAssets ?? 0
@@ -61,10 +107,12 @@ export async function getDashboardStats() {
   const inactive = Math.max(total - active, 0)
 
   return {
-    userName: profile?.full_name ?? 'Admin User',
+    userName: profile?.full_name ?? (isScoped ? 'Staff User' : 'Admin User'),
     totalAssets: total,
     activeAssets: active,
     pendingMaintenance: pending,
+    inProgressMaintenance: inProgress,
+    completedMaintenance: completedMaintenance ?? 0,
     feedbackCount: feedbackCount ?? 0,
     recentMaintenance: recentMaintenance ?? [],
     statusOverview: {

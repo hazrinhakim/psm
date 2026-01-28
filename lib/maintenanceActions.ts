@@ -2,9 +2,10 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { createSupabaseAdminClient } from './supabaseAdmin'
 import { createSupabaseServerClient } from './supabaseServer'
 
-const allowedStatuses = ['pending', 'in_progress', 'completed'] as const
+const allowedStatuses = ['Pending', 'In Progress', 'Resolved'] as const
 
 function getRedirectPath(formData: FormData, fallback: string) {
   const value = String(formData.get('redirectTo') ?? '').trim()
@@ -30,7 +31,18 @@ export async function updateMaintenanceStatus(formData: FormData) {
     redirect(`${redirectTo}?error=${encodeURIComponent(error.message)}`)
   }
 
+  if (status === 'In Progress' || status === 'Resolved') {
+    const adminClient = createSupabaseAdminClient()
+    if (adminClient) {
+      await adminClient
+        .from('notifications')
+        .update({ read: true })
+        .eq('type', 'maintenance')
+        .eq('read', false)
+        .ilike('message', `%[maintenance:${id}]%`)
+    }
+  }
+
   revalidatePath(redirectTo)
   redirect(`${redirectTo}?updated=1`)
 }
-

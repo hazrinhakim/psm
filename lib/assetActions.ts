@@ -17,16 +17,37 @@ function sanitizeValue(value: FormDataEntryValue | null) {
   return trimmed ? trimmed : null
 }
 
+async function assertAssigneeExists(
+  supabase: ReturnType<typeof createSupabaseServerClient>,
+  assignee: string | null,
+  redirectTo: string
+) {
+  if (!assignee) {
+    return
+  }
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('full_name', assignee)
+    .maybeSingle()
+
+  if (error || !data) {
+    redirect(`${redirectTo}?error=assignee_not_found`)
+  }
+}
+
 export async function createAsset(formData: FormData) {
   const redirectTo = getRedirectPath(formData, '/admin/assets')
   const assetNo = sanitizeValue(formData.get('asset_no'))
   const assetName = sanitizeValue(formData.get('asset_name'))
+  const userName = sanitizeValue(formData.get('user_name'))
 
   if (!assetNo || !assetName) {
     redirect(`${redirectTo}?error=missing_required_fields`)
   }
 
   const supabase = createSupabaseServerClient()
+  await assertAssigneeExists(supabase, userName, redirectTo)
   const { error } = await supabase.from('assets').insert({
     asset_no: assetNo,
     asset_name: assetName,
@@ -36,7 +57,7 @@ export async function createAsset(formData: FormData) {
     year: sanitizeValue(formData.get('year')),
     department: sanitizeValue(formData.get('department')),
     unit: sanitizeValue(formData.get('unit')),
-    user_name: sanitizeValue(formData.get('user_name')),
+    user_name: userName,
     purchase_date: sanitizeValue(formData.get('purchase_date')),
     price: sanitizeValue(formData.get('price')),
     supplier: sanitizeValue(formData.get('supplier')),
@@ -69,12 +90,14 @@ export async function createAsset(formData: FormData) {
 export async function updateAsset(formData: FormData) {
   const redirectTo = getRedirectPath(formData, '/admin/assets')
   const id = sanitizeValue(formData.get('id'))
+  const userName = sanitizeValue(formData.get('user_name'))
 
   if (!id) {
     redirect(`${redirectTo}?error=missing_asset_id`)
   }
 
   const supabase = createSupabaseServerClient()
+  await assertAssigneeExists(supabase, userName, redirectTo)
   const { error } = await supabase
     .from('assets')
     .update({
@@ -86,7 +109,7 @@ export async function updateAsset(formData: FormData) {
       year: sanitizeValue(formData.get('year')),
       department: sanitizeValue(formData.get('department')),
       unit: sanitizeValue(formData.get('unit')),
-      user_name: sanitizeValue(formData.get('user_name')),
+      user_name: userName,
       purchase_date: sanitizeValue(formData.get('purchase_date')),
       price: sanitizeValue(formData.get('price')),
       supplier: sanitizeValue(formData.get('supplier')),
