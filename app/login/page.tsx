@@ -348,7 +348,6 @@ export default function LoginPage() {
                   whileTap={{ scale: 0.98 }}
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.8 }}
                 >
                   <Button 
                     type="submit" 

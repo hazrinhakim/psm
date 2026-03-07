@@ -133,9 +133,9 @@ export function Sidebar({
     <SidebarRoot collapsible="icon">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-28 items-center justify-center overflow-hidden">
+          <span className="flex h-6 w-25 items-center justify-center overflow-hidden">
             <img
-              src="/ICAMS-1.png"
+              src="/icamsrbg.png"
               alt="ICT"
               className="h-full w-full object-cover"
             />
@@ -193,7 +193,7 @@ export function Sidebar({
             variant="outline"
             size="sm"
             onClick={logout}
-            className="h-10 w-full justify-start gap-2 bg-red-600 border-red-600 text-white hover:bg-red-700 hover:border-red-700 hover:text-white group-data-[collapsible=icon]:justify-center"
+            className="h-10 w-full justify-start gap-2 bg-red-600 border-red-600 text-white hover:bg-red-700 hover:border-red-700 hover:text-white group-data-[collapsible=icon]:justify-center text-center"
           >
             <LogOut className="h-4 w-4" />
             <span className="group-data-[collapsible=icon]:hidden">

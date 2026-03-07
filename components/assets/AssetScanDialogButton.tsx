@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogOverlay,
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { AssetScan } from '@/components/scan/AssetScan'
@@ -24,7 +25,9 @@ export function AssetScanDialogButton({ basePath }: { basePath: string }) {
           Scan QR
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogOverlay className="bg-white/10 backdrop-blur-xs" />
+
+      <DialogContent className="pt-0 w-md">
         <DialogHeader>
           <DialogTitle className="sr-only">Scan asset QR</DialogTitle>
         </DialogHeader>
@@ -36,6 +39,7 @@ export function AssetScanDialogButton({ basePath }: { basePath: string }) {
           />
         </ScrollArea>
       </DialogContent>
+
     </Dialog>
   )
 }

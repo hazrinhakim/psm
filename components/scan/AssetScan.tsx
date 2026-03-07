@@ -145,9 +145,9 @@ export function AssetScan({
   }, [stopCamera])
 
   return (
-    <div className="space-y-6 max-w-sm">
+    <div className="w-full max-w-sm mx-auto">
         <CardContent>
-          <div className="space-y-5">
+          
             <div className="space-y-3 rounded-xl border bg-muted/40 p-4">
               <CardTitle className="text-sm">Scan Asset QR</CardTitle>
               <p className="text-xs text-muted-foreground">
@@ -181,10 +181,8 @@ export function AssetScan({
                 Allow camera access, then align the QR inside the frame.
               </p>
             </div>
-            {status && (
-              <p className="text-sm text-muted-foreground">{status}</p>
-            )}
-          </div>
+
+          
         </CardContent>
     </div>
   )
