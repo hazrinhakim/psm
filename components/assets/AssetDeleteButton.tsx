@@ -1,6 +1,5 @@
 "use client"
 
-import { useId } from "react"
 import { useFormStatus } from "react-dom"
 import { Trash2, AlertCircle } from "lucide-react"
 
@@ -54,8 +53,6 @@ export function AssetDeleteButton({
   redirectTo,
   assetLabel,
 }: AssetDeleteButtonProps) {
-  const dialogTitleId = useId()
-
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -69,11 +66,12 @@ export function AssetDeleteButton({
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
+        <DialogTitle className="sr-only">Delete asset</DialogTitle>
         <DialogHeader>
-          <DialogTitle id={dialogTitleId} className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-lg leading-none font-semibold">
             <AlertCircle className="h-5 w-5 text-rose-600" />
             Delete confirmation
-          </DialogTitle>
+          </div>
           <DialogDescription>
             This will permanently delete{" "}
             <span className="font-medium text-foreground">{assetLabel}</span>. This

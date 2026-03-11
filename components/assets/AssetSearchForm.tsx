@@ -40,17 +40,8 @@ export function AssetSearchForm({ basePath, query }: AssetSearchFormProps) {
           className="h-11 gap-2 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-md hover:shadow-lg transition-all duration-200 px-8 rounded-full group"
           disabled={pending || isClearing}
         >
-          {pending ? (
-            <>
-              <Spinner className="mr-2" />
-              Searching...
-            </>
-          ) : (
-            <>
-              <Search className="h-4 w-4 transition-transform group-hover:scale-110" />
-              Search
-            </>
-          )}
+          {pending ? <Spinner /> : <Search className="h-4 w-4 transition-transform group-hover:scale-110" />}
+          Search
         </Button>
         <Button
           variant="outline"

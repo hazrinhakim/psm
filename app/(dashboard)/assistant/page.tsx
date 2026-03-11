@@ -17,6 +17,16 @@ import {
   Wrench,
 } from 'lucide-react'
 
+type MaintenanceRequest = {
+  id: string
+  status?: string | null
+  title?: string | null
+  created_at?: string | null
+  profiles?: {
+    full_name?: string | null
+  } | null
+}
+
 export default async function AssistantDashboard() {
   const {
     totalAssets,
@@ -143,7 +153,7 @@ export default async function AssistantDashboard() {
                 No maintenance requests yet.
               </p>
             )}
-            {recentMaintenance.map((request: any) => (
+            {recentMaintenance.map((request: MaintenanceRequest) => (
               <div
                 key={request.id}
                 className="flex flex-wrap items-start justify-between gap-3"

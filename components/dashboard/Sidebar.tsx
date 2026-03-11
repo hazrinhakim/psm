@@ -64,6 +64,18 @@ const menus: Record<
     ],
   }
 
+const badgeLabelMap: Record<string, string> = {
+  admin: 'Admin Portal',
+  admin_assistant: 'Admin Assistant Portal',
+  staff: 'Staff',
+}
+
+const badgeClassMap: Record<string, string> = {
+  admin: 'bg-blue-100 text-blue-700 border-blue-200',
+  admin_assistant: 'bg-purple-100 text-purple-700 border-purple-200',
+  staff: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+}
+
 export function Sidebar({
   basePath,
   role,
@@ -76,16 +88,6 @@ export function Sidebar({
   const menu = menus[role] ?? menus.staff
   const [profileName, setProfileName] = useState<string>('User')
   const [profileRole, setProfileRole] = useState<string>(role)
-  const badgeLabelMap: Record<string, string> = {
-    admin: 'Admin Portal',
-    admin_assistant: 'Admin Assistant Portal',
-    staff: 'Staff',
-  }
-  const badgeClassMap: Record<string, string> = {
-    admin: 'bg-blue-100 text-blue-700 border-blue-200',
-    admin_assistant: 'bg-purple-100 text-purple-700 border-purple-200',
-    staff: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  }
   const portalLabel = badgeLabelMap[profileRole] ?? 'Staff'
   const portalClass = badgeClassMap[profileRole] ?? badgeClassMap.staff
 

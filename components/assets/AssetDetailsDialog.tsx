@@ -5,8 +5,39 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
 type AssetDetailsDialogProps = {
-  asset: any
+  asset: AssetDetails
   statusLabel: string
+}
+
+type AssetDetails = {
+  id?: string | null
+  asset_no?: string | null
+  asset_name?: string | null
+  asset_categories?: { name?: string | null } | null
+  type?: string | null
+  user_name?: string | null
+  department?: string | null
+  unit?: string | null
+  purchase_date?: string | null
+  price?: string | number | null
+  supplier?: string | null
+  source?: string | null
+  model?: string | null
+  serial_no?: string | null
+  processor?: string | null
+  ram_capacity?: string | null
+  hdd_capacity?: string | null
+  monitor_model?: string | null
+  monitor_serial_no?: string | null
+  monitor_asset_no?: string | null
+  keyboard_model?: string | null
+  keyboard_serial_no?: string | null
+  keyboard_asset_no?: string | null
+  mouse_model?: string | null
+  mouse_serial_no?: string | null
+  mouse_asset_no?: string | null
+  qr_code?: string | null
+  accessories?: string | null
 }
 
 function formatValue(value?: string | null) {

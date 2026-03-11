@@ -3,11 +3,12 @@ import { Header } from '@/components/dashboard/Header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 import { normalizeRole, roleToPath } from '@/lib/roles'
+import type { ReactNode } from 'react'
 
 export default async function AdminLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: ReactNode
 }) {
   const supabase = createSupabaseServerClient()
   const {

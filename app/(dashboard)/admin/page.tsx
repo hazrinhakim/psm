@@ -13,16 +13,23 @@ import {
   AlertCircle,
   MessageSquare,
   Package,
-  TrendingUp,
   Wrench,
   Zap,
   Power,
-  Sparkles,
 } from 'lucide-react'
+
+type MaintenanceRequest = {
+  id: string
+  status?: string | null
+  title?: string | null
+  created_at?: string | null
+  profiles?: {
+    full_name?: string | null
+  } | null
+}
 
 export default async function AdminDashboard() {
   const {
-    userName,
     totalAssets,
     activeAssets,
     pendingMaintenance,
@@ -179,7 +186,7 @@ export default async function AdminDashboard() {
                 </p>
               </div>
             )}
-            {recentMaintenance.map((request: any, index: number) => (
+            {recentMaintenance.map((request: MaintenanceRequest, index: number) => (
               <div
                 key={request.id}
                 className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors duration-200 animate-in fade-in"

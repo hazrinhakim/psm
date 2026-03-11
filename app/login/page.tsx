@@ -9,7 +9,6 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
   CardFooter,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -17,7 +16,7 @@ import { Label } from '@/components/ui/label'
 import { roleToPath } from '@/lib/roles'
 import { toast } from 'sonner'
 import { Spinner } from '@/components/ui/spinner'
-import { Building, Lock, Mail, Shield, Sparkles, Cpu, Server, HardDrive, Wifi } from 'lucide-react'
+import { Lock, Mail, Shield, Cpu, Server, HardDrive, Wifi } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 export default function LoginPage() {
@@ -418,7 +417,7 @@ export default function LoginPage() {
           className="mt-4 text-center"
         >
           <p className="text-xs text-gray-700 flex items-center justify-center gap-1">
-            <motion.div
+            <motion.span
               animate={{ 
                 scale: [1, 1.2, 1],
                 rotate: [0, 10, 0]
@@ -428,9 +427,10 @@ export default function LoginPage() {
                 repeat: Infinity,
                 delay: 1.5
               }}
+              className="inline-flex"
             >
               <Shield className="h-3.5 w-3.5 text-amber-500" />
-            </motion.div>
+            </motion.span>
             Secured by{' '}
             <span className="font-semibold bg-gradient-to-r from-gray-900 via-amber-500 to-amber-300 bg-clip-text text-transparent">
               Perak State Security

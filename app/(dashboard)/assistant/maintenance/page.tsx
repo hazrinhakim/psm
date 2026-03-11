@@ -1,14 +1,25 @@
 import { MaintenanceList } from '@/components/maintenance/MaintenanceList'
 
-export default function AssistantMaintenancePage({
+export const dynamic = 'force-dynamic'
+
+type MaintenanceSearchParams = {
+  updated?: string
+  error?: string
+  q?: string
+  status?: string
+}
+
+export default async function AssistantMaintenancePage({
   searchParams,
 }: {
-  searchParams?: {
-    updated?: string
-    error?: string
-  }
+  searchParams?: MaintenanceSearchParams | Promise<MaintenanceSearchParams>
 }) {
+  const resolvedSearchParams = await Promise.resolve(searchParams)
+
   return (
-    <MaintenanceList basePath="/assistant" searchParams={searchParams} />
+    <MaintenanceList
+      basePath="/assistant"
+      searchParams={resolvedSearchParams}
+    />
   )
 }

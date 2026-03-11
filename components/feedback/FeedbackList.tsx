@@ -2,6 +2,24 @@ import { FeedbackItem } from '@/components/feedback/FeedbackItem'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 import { createSupabaseAdminClient } from '@/lib/supabaseAdmin'
 
+type FeedbackEntry = {
+  id: string
+  message?: string | null
+  role?: string | null
+  email?: string | null
+  created_at?: string | null
+  created_by?: string | null
+}
+
+type ProfileEntry = {
+  id: string
+  full_name?: string | null
+}
+
+type NotificationEntry = {
+  message?: string | null
+}
+
 export async function FeedbackList() {
   const supabase = createSupabaseServerClient()
   const {
@@ -18,7 +36,7 @@ export async function FeedbackList() {
 
   if (!user || profile?.role !== 'admin') {
     return (
-      <div className="space-y-2">
+      <div className="space-y-2 animate-in fade-in duration-700">
         <h1 className="text-2xl font-semibold tracking-tight">
           Feedback
         </h1>
@@ -40,7 +58,7 @@ export async function FeedbackList() {
     .eq('read', false)
 
   const unreadFeedbackIds = new Set(
-    (unreadNotifications ?? [])
+    (unreadNotifications as NotificationEntry[] | null ?? [])
       .map(note => {
         const message = note.message ?? ''
         const match = message.match(/\[feedback:([a-f0-9-]+)\]/i)
@@ -65,7 +83,7 @@ export async function FeedbackList() {
 
   if (error) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-2 animate-in fade-in duration-700">
         <h1 className="text-2xl font-semibold tracking-tight">
           Feedback
         </h1>
@@ -77,7 +95,7 @@ export async function FeedbackList() {
   }
 
   const createdByIds = Array.from(
-    new Set((feedback ?? []).map((entry: any) => entry.created_by))
+    new Set((feedback as FeedbackEntry[] | null ?? []).map(entry => entry.created_by))
   ).filter(Boolean)
 
   const { data: profiles } = createdByIds.length
@@ -88,7 +106,7 @@ export async function FeedbackList() {
     : { data: [] }
 
   const profileMap = new Map(
-    (profiles ?? []).map((entry: any) => [entry.id, entry.full_name])
+    (profiles as ProfileEntry[] | null ?? []).map(entry => [entry.id, entry.full_name])
   )
 
   const emailMap = new Map<string, string>()
@@ -110,18 +128,18 @@ export async function FeedbackList() {
     })
   }
 
-  const getDisplayName = (entry: any) =>
+  const getDisplayName = (entry: FeedbackEntry) =>
     profileMap.get(entry.created_by) ??
     entry.email ??
     emailMap.get(entry.created_by) ??
     'Staff member'
 
-  const getDisplayEmail = (entry: any) =>
+  const getDisplayEmail = (entry: FeedbackEntry) =>
     entry.email ?? emailMap.get(entry.created_by) ?? null
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
+    <div className="space-y-6 animate-in fade-in duration-700">
+      <div className="space-y-1 animate-in slide-in-from-left-4 duration-700">
         <h1 className="text-2xl font-semibold tracking-tight">
           Feedback
         </h1>
@@ -136,8 +154,8 @@ export async function FeedbackList() {
         </p>
       )}
 
-      <div className="grid gap-4">
-        {feedback?.map((entry: any) => {
+      <div className="grid gap-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
+        {(feedback as FeedbackEntry[] | null)?.map(entry => {
           const displayName = getDisplayName(entry)
           const displayEmail = getDisplayEmail(entry)
           const dateLabel = entry.created_at

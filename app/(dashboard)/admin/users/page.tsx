@@ -6,13 +6,11 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { SonnerNotifier } from '@/components/ui/sonner-notifier'
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -22,16 +20,15 @@ import { createSupabaseAdminClient } from '@/lib/supabaseAdmin'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 import { deleteUser, updateUserRole } from './actions'
 import { normalizeRole } from '@/lib/roles'
-import { 
-  Search, 
-  Trash2, 
-  Pencil, 
-  Mail, 
+import {
+  Trash2,
+  Pencil,
+  Mail,
   Users,
   Sparkles,
-  UserCircle
 } from 'lucide-react'
 import { InviteUserDialog } from './InviteUserDialog'
+import { UserSearchForm } from './UserSearchForm'
 
 type SearchParams = {
   invited?: string
@@ -190,7 +187,6 @@ export default async function AdminUsersPage({
       })
     : users
 
-  const displayName = profile?.full_name ?? 'Admin User'
   const baseQuery = new URLSearchParams()
   if (resolvedSearchParams?.q) {
     baseQuery.set('q', resolvedSearchParams.q)
@@ -254,36 +250,7 @@ export default async function AdminUsersPage({
       )}
 
       {/* Search Field - with fade in */}
-      <form
-        method="get"
-        className="flex w-full flex-col gap-3 sm:flex-row sm:items-center animate-in fade-in slide-in-from-bottom-2 duration-700"
-      >
-        <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            name="q"
-            placeholder="Search users by name, email, or role..."
-            defaultValue={query}
-            className="h-10 rounded-full border-muted pl-11 pr-4 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 transition-all bg-white"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            type="submit" 
-            className="h-10 gap-2 bg-black hover:bg-stone-600 shadow-md hover:shadow-lg transition-all duration-200 px-6"
-          >
-            <Search className="h-4 w-4" />
-            Search
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            className="h-10 border-2 hover:bg-gray-100 transition-colors px-6"
-          >
-            <a href="?">Clear</a>
-          </Button>
-        </div>
-      </form>
+      <UserSearchForm query={query} />
 
       {/* Users Table Card - with fade in and slide up */}
       <Card className="border-2 border-gray-100 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700">

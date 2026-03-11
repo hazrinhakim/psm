@@ -5,9 +5,11 @@ export default function AdminQrPage({
 }: {
   searchParams?: {
     qr?: string
+    removed?: string
     error?: string
+    q?: string
+    asset?: string
   }
 }) {
   return <QrManagement basePath="/admin" searchParams={searchParams} />
 }
-

@@ -5,20 +5,51 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import { SonnerNotifier } from '@/components/ui/sonner-notifier'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
-import { generateAssetQr } from '@/lib/assetActions'
+import { generateAssetQr, removeAssetQr } from '@/lib/assetActions'
 import { QrCode, Search } from 'lucide-react'
 import { QrAssetSelect } from '@/components/assets/QrAssetSelect'
+import { QrSearchForm } from '@/components/assets/QrSearchForm'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
+import {
+  QrDeleteConfirmButton,
+  QrDownloadButton,
+  QrGenerateButton,
+} from '@/components/assets/QrButtons'
 
 type SearchParams = {
   qr?: string
+  removed?: string
   error?: string
   q?: string
   asset?: string
+}
+
+type QrAsset = {
+  id: string
+  asset_no: string | null
+  asset_name: string | null
+  qr_code: string | null
+  user_name: string | null
+  department: string | null
+  asset_categories?: { name?: string | null } | { name?: string | null }[] | null
 }
 
 function qrImageUrl(value: string) {
@@ -29,6 +60,14 @@ function qrImageUrl(value: string) {
 function qrDownloadUrl(value: string) {
   const encoded = encodeURIComponent(value)
   return `/api/qr?data=${encoded}`
+}
+
+function getCategoryName(asset: QrAsset) {
+  const category = asset.asset_categories
+  if (Array.isArray(category)) {
+    return category[0]?.name ?? 'Uncategorized'
+  }
+  return category?.name ?? 'Uncategorized'
 }
 export async function QrManagement({
   basePath,
@@ -52,24 +91,30 @@ export async function QrManagement({
 
   const supabase = createSupabaseServerClient()
 
-  let searchResults: any[] = []
+  let searchResults: QrAsset[] = []
   if (hasQuery) {
     const { data } = await supabase
       .from('assets')
-      .select('id, asset_no, asset_name, qr_code, asset_categories ( name )')
+      .select(
+        'id, asset_no, asset_name, qr_code, user_name, department, asset_categories ( name )'
+      )
       .or(
         `asset_no.ilike.%${query}%,asset_name.ilike.%${query}%,user_name.ilike.%${query}%`
       )
       .order('asset_name')
 
-    searchResults = data ?? []
+    searchResults = (data ?? []) as QrAsset[]
   }
 
   const { data: assetsWithQr } = await supabase
     .from('assets')
-    .select('id, asset_no, asset_name, qr_code, asset_categories ( name )')
+    .select(
+      'id, asset_no, asset_name, qr_code, user_name, department, asset_categories ( name )'
+    )
     .not('qr_code', 'is', null)
     .order('asset_name')
+
+  const assetsWithQrList = (assetsWithQr ?? []) as QrAsset[]
 
   let selectedAsset =
     searchResults.find(asset => asset.id === resolvedSearchParams?.asset) ??
@@ -78,21 +123,28 @@ export async function QrManagement({
   if (!selectedAsset && resolvedSearchParams?.asset) {
     const { data } = await supabase
       .from('assets')
-      .select('id, asset_no, asset_name, qr_code, asset_categories ( name )')
+      .select(
+        'id, asset_no, asset_name, qr_code, user_name, department, asset_categories ( name )'
+      )
       .eq('id', resolvedSearchParams.asset)
       .maybeSingle()
 
-    selectedAsset = data ?? null
+    selectedAsset = (data as QrAsset | null) ?? null
   }
 
   const showQr = Boolean(resolvedSearchParams?.qr && selectedAsset)
   const selectedCode = selectedAsset
     ? selectedAsset.qr_code ?? selectedAsset.asset_no ?? selectedAsset.id
     : ''
+  const selectedName = selectedAsset?.asset_name ?? 'Selected asset'
+  const searchOptions = searchResults.map(asset => ({
+    ...asset,
+    asset_categories: { name: getCategoryName(asset) },
+  }))
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
+    <div className="space-y-6 animate-in fade-in duration-700">
+      <div className="space-y-1 animate-in slide-in-from-left-4 duration-700">
         <h1 className="text-lg font-semibold tracking-tight">
           QR Code Management
         </h1>
@@ -101,24 +153,36 @@ export async function QrManagement({
         </p>
       </div>
 
-      {(resolvedSearchParams?.qr || resolvedSearchParams?.error) && (
+      {(resolvedSearchParams?.qr ||
+        resolvedSearchParams?.error ||
+        resolvedSearchParams?.removed) && (
         <SonnerNotifier
           title={
             resolvedSearchParams?.error
               ? 'Action needed'
-              : 'QR code updated'
+              : resolvedSearchParams?.removed
+                ? 'QR code removed'
+                : 'QR code updated'
           }
           message={
             resolvedSearchParams?.error
               ? errorMessage || 'Unable to generate QR code.'
-              : 'QR code stored for the selected asset.'
+              : resolvedSearchParams?.removed
+                ? 'QR code cleared for the selected asset.'
+                : 'QR code stored for the selected asset.'
           }
           variant={resolvedSearchParams?.error ? 'error' : 'success'}
-          toastId={`qr-${resolvedSearchParams?.error ? 'error' : 'saved'}`}
+          toastId={`qr-${
+            resolvedSearchParams?.error
+              ? 'error'
+              : resolvedSearchParams?.removed
+                ? 'removed'
+                : 'saved'
+          }`}
         />
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="grid gap-6 animate-in slide-in-from-bottom-4 duration-700">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Generate QR Code</CardTitle>
@@ -127,40 +191,7 @@ export async function QrManagement({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <form method="get" action={basePath + '/qr'} className="space-y-2">
-              <Label htmlFor="qr-search">Search asset</Label>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="qr-search"
-                    name="q"
-                    placeholder="Search by asset no, asset name or user name"
-                    defaultValue={query}
-                    className="h-11 rounded-full border-muted pl-11 pr-4 shadow-sm focus-visible:ring-2 focus-visible:ring-offset-0"
-                  />
-                </div>
-                <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
-                  <Button
-                    type="submit"
-                    className="h-11 w-full rounded-full gap-2 sm:w-auto"
-                  >
-                    <Search className="h-4 w-4" />
-                    Search
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="h-11 w-full rounded-full sm:w-auto"
-                  >
-                    <a href={basePath + '/qr'}>Clear</a>
-                  </Button>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Search first to unlock the generate button.
-              </p>
-            </form>
+            <QrSearchForm basePath={basePath} query={query} />
 
             <form action={generateAssetQr} className="space-y-3">
               <input type="hidden" name="redirectTo" value={basePath + '/qr'} />
@@ -169,7 +200,7 @@ export async function QrManagement({
                 <Label htmlFor="asset-select">Select asset</Label>
                 <QrAssetSelect
                   id="asset-select"
-                  assets={searchResults}
+                  assets={searchOptions}
                   defaultValue={resolvedSearchParams?.asset ?? ''}
                   disabled={!hasQuery || searchResults.length === 0}
                   placeholder={
@@ -182,13 +213,9 @@ export async function QrManagement({
                   No assets found. Try another keyword.
                 </p>
               )}
-              <Button
-                type="submit"
-                className="w-full"
+              <QrGenerateButton
                 disabled={!hasQuery || searchResults.length === 0}
-              >
-                Generate QR Code
-              </Button>
+              />
             </form>
 
             <div className="rounded-lg border bg-muted/20 p-4">
@@ -196,22 +223,21 @@ export async function QrManagement({
                 <div className="flex flex-col items-center gap-3 text-center">
                   <img
                     src={qrImageUrl(selectedCode)}
-                    alt={`QR for ${selectedAsset.asset_name}`}
+                    alt={`QR for ${selectedName}`}
                     className="h-48 w-48 rounded-md border bg-white p-2"
                   />
                   <div className="text-sm">
                     <p className="font-medium">{selectedCode}</p>
                     <p className="text-muted-foreground">
-                      {selectedAsset.asset_name}
+                      {selectedName}
                     </p>
                   </div>
-                  <Button asChild>
-                    <a
-                      href={qrDownloadUrl(selectedCode)}
-                    >
-                      Download QR Code
-                    </a>
-                  </Button>
+                  <QrDownloadButton
+                    href={qrDownloadUrl(selectedCode)}
+                    label="Download QR Code"
+                    size="default"
+                    variant="default"
+                  />
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2 py-6 text-center text-sm text-muted-foreground">
@@ -225,62 +251,116 @@ export async function QrManagement({
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Assets with QR Codes</CardTitle>
-            <CardDescription>
-              Ready-to-print QR codes for registered assets.
-            </CardDescription>
-          </CardHeader>
-<CardContent className="space-y-3">
-  {assetsWithQr && assetsWithQr.length > 0 ? (
-    assetsWithQr.map((asset: any) => {
-      const code = asset.qr_code ?? asset.asset_no ?? asset.id
-
-      return (
-        <div
-          key={asset.id}
-          className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3"
-        >
-          {/* LEFT CONTENT */}
-          <div className="flex flex-1 items-center gap-3 min-w-0">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-              <QrCode className="h-5 w-5" />
-            </span>
-
-            <div className="min-w-0 text-sm">
-              <p
-                className="font-medium truncate"
-                title={asset.asset_no ?? code}
-              >
-                {asset.asset_no ?? code}
-              </p>
-              <p className="truncate text-muted-foreground">
-                {asset.asset_name}
-              </p>
-            </div>
-          </div>
-
-          {/* RIGHT BUTTON */}
-          <Button asChild variant="outline" size="sm" className="shrink-0">
-            <a
-              href={qrDownloadUrl(code)}
-            >
-              Download
-            </a>
-          </Button>
-        </div>
-      )
-    })
-  ) : (
-    <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-      No QR codes generated yet.
-    </div>
-  )}
-</CardContent>
-
-        </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">QR Code Asset Details</CardTitle>
+          <CardDescription>
+            Review asset info and remove QR codes when needed.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {assetsWithQrList.length > 0 ? (
+            <Accordion type="single" collapsible className="w-full">
+              {assetsWithQrList.map(asset => {
+                const code = asset.qr_code ?? asset.asset_no ?? asset.id
+
+                return (
+                  <AccordionItem key={asset.id} value={asset.id}>
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex w-full items-center gap-3">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                          <QrCode className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0 text-left">
+                          <p className="text-sm font-medium truncate">
+                            {asset.asset_name || 'Unnamed asset'}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {asset.asset_no ?? code}
+                          </p>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4">
+                      <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Asset ID</p>
+                          <p className="font-medium">{asset.asset_no ?? code}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Assigned User</p>
+                          <p className="font-medium">
+                            {asset.user_name || 'Unassigned'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Department</p>
+                          <p className="font-medium">
+                            {asset.department || 'Not set'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Category</p>
+                          <p className="font-medium">
+                            {getCategoryName(asset)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">QR Code</p>
+                          <p className="font-medium">{code}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <QrDownloadButton href={qrDownloadUrl(code)} />
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="destructive">
+                              Delete QR Code
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                              <DialogTitle>Delete QR code?</DialogTitle>
+                              <DialogDescription>
+                                This will remove the QR code for{' '}
+                                <span className="font-medium">
+                                  {asset.asset_name || asset.asset_no || 'this asset'}
+                                </span>
+                                . You can generate a new one later.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                              <DialogClose asChild>
+                                <Button variant="outline">Cancel</Button>
+                              </DialogClose>
+                              <form action={removeAssetQr}>
+                                <input
+                                  type="hidden"
+                                  name="redirectTo"
+                                  value={basePath + '/qr'}
+                                />
+                                <input type="hidden" name="id" value={asset.id} />
+                                <QrDeleteConfirmButton />
+                              </form>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )
+              })}
+            </Accordion>
+          ) : (
+            <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+              No QR codes generated yet.
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

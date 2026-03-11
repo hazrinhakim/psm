@@ -7,6 +7,14 @@ import {
 } from '@/components/ui/card'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 
+type NotificationItem = {
+  id: string
+  message?: string | null
+  type?: string | null
+  date?: string | null
+  read?: boolean | null
+}
+
 export default async function StaffNotificationsPage() {
   const supabase = createSupabaseServerClient()
   const {
@@ -50,7 +58,7 @@ export default async function StaffNotificationsPage() {
       )}
 
       <div className="grid gap-4">
-        {notifications?.map((note: any) => (
+        {notifications?.map((note: NotificationItem) => (
           <Card key={note.id}>
             <CardHeader className="space-y-1">
               <CardTitle className="text-base">

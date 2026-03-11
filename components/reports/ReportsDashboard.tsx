@@ -127,7 +127,7 @@ export function ReportsDashboard({
   /* ---------- UI ---------- */
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {[
           ['Total assets', metrics.totalAssets],

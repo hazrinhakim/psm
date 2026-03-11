@@ -8,7 +8,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import {
   AlertCircle,
   Package,
@@ -17,6 +16,16 @@ import {
   CheckCircle2,
   AlertTriangle,
 } from 'lucide-react'
+
+type MaintenanceRequest = {
+  id: string
+  status?: string | null
+  title?: string | null
+  created_at?: string
+  profiles?: {
+    full_name?: string | null
+  } | null
+}
 
 export default async function StaffDashboard() {
   const {
@@ -203,7 +212,7 @@ export default async function StaffDashboard() {
                   </p>
                 </div>
               ) : (
-                recentMaintenance.map((request: any) => (
+                recentMaintenance.map((request: MaintenanceRequest) => (
                   <div
                     key={request.id}
                     className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"

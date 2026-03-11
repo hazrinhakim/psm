@@ -2,10 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CardContent, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import QrScanner from 'qr-scanner'
 
@@ -18,9 +16,6 @@ export function AssetScan({
   searchPath?: string
   onScanSuccess?: () => void
 }) {
-  const [code, setCode] = useState('')
-  const [status, setStatus] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
   const [cameraActive, setCameraActive] = useState(false)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const scannerRef = useRef<QrScanner | null>(null)
@@ -61,36 +56,16 @@ export function AssetScan({
     [onScanSuccess, router, resolvedScanBasePath, searchPath, stopCamera]
   )
 
-  const handleScan = async (event: React.FormEvent) => {
-    event.preventDefault()
-    setStatus(null)
-    setLoading(true)
-
-    const value = code.trim()
-    if (!value) {
-      setStatus('Enter a QR code value or asset ID.')
-      toast.info('Enter a QR code value or asset ID.')
-      setLoading(false)
-      return
-    }
-
-    goToResult(value)
-    setLoading(false)
-  }
-
   const startCamera = useCallback(async () => {
     if (cameraActive) {
       return
     }
-    setStatus(null)
     if (!videoRef.current) {
-      setStatus('Camera preview is not ready.')
       return
     }
 
     const hasCamera = await QrScanner.hasCamera()
     if (!hasCamera) {
-      setStatus('No camera detected on this device.')
       toast.info('No camera detected on this device.')
       return
     }
@@ -128,9 +103,7 @@ export function AssetScan({
     try {
       await scannerRef.current.start()
       setCameraActive(true)
-      setStatus('Scanning...')
-    } catch (error) {
-      setStatus('Camera access was blocked. Please allow permission.')
+    } catch {
       toast.error('Camera access was blocked. Please allow permission.')
       stopCamera()
     }

@@ -23,7 +23,6 @@ import { SonnerNotifier } from '@/components/ui/sonner-notifier'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 import { createAsset, deleteAsset, updateAsset } from '@/lib/assetActions'
 import { normalizeRole } from '@/lib/roles'
-import { AssetScanDialogButton } from '@/components/assets/AssetScanDialogButton'
 import { AssetCreateSubmitButton } from '@/components/assets/AssetCreateSubmitButton'
 import { AssetDeleteButton } from '@/components/assets/AssetDeleteButton'
 import { AssetSearchForm } from '@/components/assets/AssetSearchForm'
@@ -45,23 +44,14 @@ import {
   Calendar,
   User,
   Package,
-  Wrench,
   Plus,
   Pencil,
   FileText,
   Sparkles,
-  BarChart3,
-  CheckCircle2,
-  AlertCircle,
-  Copy,
-  Check,
   Laptop,
   Printer,
   Monitor,
-  HardDrive,
   Cpu,
-  Mouse,
-  Keyboard,
 } from 'lucide-react'
 
 type SearchParams = {
@@ -73,6 +63,44 @@ type SearchParams = {
 }
 
 type AssetStatus = 'active' | 'inactive'
+
+type AssetCategory = {
+  name?: string | null
+}
+
+type Asset = {
+  id: string
+  asset_no?: string | null
+  asset_name?: string | null
+  category_id?: string | null
+  type?: string | null
+  qr_code?: string | null
+  year?: string | number | null
+  department?: string | null
+  unit?: string | null
+  user_name?: string | null
+  purchase_date?: string | null
+  price?: string | number | null
+  supplier?: string | null
+  source?: string | null
+  model?: string | null
+  serial_no?: string | null
+  processor?: string | null
+  ram_capacity?: string | null
+  hdd_capacity?: string | null
+  monitor_model?: string | null
+  monitor_serial_no?: string | null
+  monitor_asset_no?: string | null
+  keyboard_model?: string | null
+  keyboard_serial_no?: string | null
+  keyboard_asset_no?: string | null
+  mouse_model?: string | null
+  mouse_serial_no?: string | null
+  mouse_asset_no?: string | null
+  accessories?: string | null
+  created_at?: string | null
+  asset_categories?: AssetCategory | AssetCategory[] | null
+}
 
 function formatDateInput(value?: string | null) {
   if (!value) {
@@ -119,8 +147,16 @@ function truncateText(text: string, maxLength: number = 15) {
   return text.substring(0, maxLength) + '...'
 }
 
+function getCategoryName(asset: Asset) {
+  const category = asset.asset_categories
+  if (Array.isArray(category)) {
+    return category[0]?.name ?? 'Uncategorized'
+  }
+  return category?.name ?? 'Uncategorized'
+}
+
 // Component untuk Asset Detail Dialog dengan design premium
-function AssetDetailsDialog({ asset, statusLabel }: { asset: any; statusLabel: string }) {
+function AssetDetailsDialog({ asset, statusLabel }: { asset: Asset; statusLabel: string }) {
   // Tentukan icon berdasarkan jenis asset
   const getAssetIcon = () => {
     const type = asset.type?.toLowerCase() || ''
@@ -166,7 +202,7 @@ function AssetDetailsDialog({ asset, statusLabel }: { asset: any; statusLabel: s
                       {asset.asset_no || 'N/A'}
                     </span>
                     <span className="text-muted-foreground">•</span>
-                    <span>{asset.asset_categories?.name || 'Uncategorized'}</span>
+                    <span>{getCategoryName(asset)}</span>
                   </DialogDescription>
                 </div>
               </div>
@@ -239,7 +275,9 @@ function AssetDetailsDialog({ asset, statusLabel }: { asset: any; statusLabel: s
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Price</p>
                   <p className="font-medium text-gray-800">
-                    {asset.price ? `RM ${parseFloat(asset.price).toLocaleString()}` : 'N/A'}
+                    {asset.price !== null && asset.price !== undefined && asset.price !== ''
+                      ? `RM ${Number(asset.price).toLocaleString()}`
+                      : 'N/A'}
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -394,8 +432,6 @@ export async function AssetManagement({
   const role = normalizeRole(profile?.role)
   const canManage =
     role === 'admin' || role === 'admin_assistant'
-  const displayName = profile?.full_name ?? 'Admin User'
-
   let assetQuery = supabase
     .from('assets')
     .select(
@@ -446,6 +482,7 @@ export async function AssetManagement({
   }
 
   const { data: assets } = await assetQuery
+  const assetsList = (assets ?? []) as Asset[]
 
   const { data: categories } = canManage
     ? await supabase
@@ -469,7 +506,7 @@ export async function AssetManagement({
   const filteredAssets = shouldGateResults
     ? []
     : query
-      ? (assets ?? []).filter((asset: any) => {
+      ? assetsList.filter(asset => {
           const haystack = [
             asset.asset_no,
             asset.asset_name,
@@ -477,26 +514,21 @@ export async function AssetManagement({
             asset.department,
             asset.unit,
             asset.user_name,
-            asset.asset_categories?.name,
+            getCategoryName(asset),
           ]
             .filter(Boolean)
             .join(' ')
             .toLowerCase()
           return haystack.includes(query)
         })
-      : assets ?? []
-
-  const totalAssets = assets?.length ?? 0
-  const activeAssets = (assets ?? []).filter(
-    (asset: any) => asset.user_name && String(asset.user_name).trim()
-  ).length
+      : assetsList
 
   const assetTypeSummaries = [
     { label: 'Computer', icon: Monitor, color: 'from-blue-400 to-blue-300' },
     { label: 'Laptop', icon: Laptop, color: 'from-emerald-400 to-emerald-300' },
     { label: 'Printer', icon: Printer, color: 'from-amber-400 to-amber-300' },
   ].map(({ label, icon, color }) => {
-    const matches = (assets ?? []).filter((asset: any) => {
+    const matches = assetsList.filter(asset => {
       const type = String(asset.type ?? '').trim().toLowerCase()
       return type === label.toLowerCase()
     })
@@ -507,11 +539,6 @@ export async function AssetManagement({
       count: matches.length,
     }
   })
-
-  const { count: maintenanceCount } = await supabase
-    .from('maintenance_requests')
-    .select('id', { count: 'exact', head: true })
-    .in('status', ['Pending', 'In Progress'])
 
   return (
     <div className="space-y-8 p-1 animate-in fade-in duration-700">
@@ -906,13 +933,7 @@ export async function AssetManagement({
             Laptop: 'from-emerald-400 to-emerald-300',
             Printer: 'from-amber-400 to-amber-300',
           }
-          const iconBgColors = {
-            Computer: 'bg-gradient-to-br from-blue-100 to-blue-50 text-blue-600 border border-blue-100',
-            Laptop: 'bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 border border-emerald-100',
-            Printer: 'bg-gradient-to-br from-amber-100 to-amber-50 text-amber-600 border border-amber-100',
-          }
           const accentColor = accentColors[summary.label as keyof typeof accentColors] || 'from-gray-400 to-gray-300'
-          const iconBg = iconBgColors[summary.label as keyof typeof iconBgColors] || 'bg-gradient-to-br from-gray-100 to-gray-50 text-gray-600 border border-gray-100'
 
           return (
             <Card 
@@ -995,7 +1016,7 @@ export async function AssetManagement({
           </div>
         )}
         
-        {filteredAssets.map((asset: any, index: number) => {
+        {filteredAssets.map((asset: Asset, index: number) => {
           const status: AssetStatus =
             asset.user_name && String(asset.user_name).trim()
               ? 'active'
@@ -1053,7 +1074,7 @@ export async function AssetManagement({
                         <CopyButton text={asset.asset_no ?? asset.id} />
                       </div>
                       <CardDescription className="truncate text-xs">
-                        {truncateText(asset.asset_categories?.name ?? 'Uncategorized')}
+                        {truncateText(getCategoryName(asset))}
                       </CardDescription>
                     </div>
                   </div>
@@ -1164,7 +1185,11 @@ export async function AssetManagement({
                                     <AssetYearPicker
                                       id={`year-${asset.id}`}
                                       name="year"
-                                      defaultValue={asset.year ?? ''}
+                                      defaultValue={
+                                        asset.year !== null && asset.year !== undefined
+                                          ? String(asset.year)
+                                          : ''
+                                      }
                                       placeholder="Pick year"
                                     />
                                   </div>

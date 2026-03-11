@@ -6,6 +6,20 @@ import { createSupabaseAdminClient } from './supabaseAdmin'
 import { createSupabaseServerClient } from './supabaseServer'
 
 const allowedStatuses = ['Pending', 'In Progress', 'Resolved'] as const
+type AllowedStatus = (typeof allowedStatuses)[number]
+
+function normalizeStatus(value: string): AllowedStatus | null {
+  const normalized = value
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (normalized === 'pending') return 'Pending'
+  if (normalized === 'in progress') return 'In Progress'
+  if (normalized === 'resolved' || normalized === 'completed') return 'Resolved'
+  return null
+}
 
 function getRedirectPath(formData: FormData, fallback: string) {
   const value = String(formData.get('redirectTo') ?? '').trim()
@@ -15,9 +29,10 @@ function getRedirectPath(formData: FormData, fallback: string) {
 export async function updateMaintenanceStatus(formData: FormData) {
   const redirectTo = getRedirectPath(formData, '/admin/maintenance')
   const id = String(formData.get('id') ?? '').trim()
-  const status = String(formData.get('status') ?? '').trim()
+  const statusInput = String(formData.get('status') ?? '').trim()
+  const status = normalizeStatus(statusInput)
 
-  if (!id || !allowedStatuses.includes(status as any)) {
+  if (!id || !status || !allowedStatuses.includes(status)) {
     redirect(`${redirectTo}?error=invalid_request`)
   }
 

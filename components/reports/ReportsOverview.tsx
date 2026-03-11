@@ -1,6 +1,18 @@
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 import { ReportsDashboard } from '@/components/reports/ReportsDashboard'
 
+type ReportAsset = {
+  type?: string | null
+  purchase_date?: string | null
+  price?: string | number | null
+  asset_categories?: { name?: string | null } | null
+}
+
+type MaintenanceRequest = {
+  status?: string | null
+  created_at?: string | null
+}
+
 function toCountMap<T extends string>(items: T[]) {
   return items.reduce<Record<string, number>>((acc, item) => {
     acc[item] = (acc[item] || 0) + 1
@@ -43,17 +55,19 @@ export async function ReportsOverview() {
     .select('status, created_at')
 
   const categoryCounts = toCountMap(
-    (assets ?? []).map(
-      (asset: any) => asset.asset_categories?.name ?? 'Uncategorized'
+    (assets as ReportAsset[] | null ?? []).map(
+      asset => asset.asset_categories?.name ?? 'Uncategorized'
     )
   )
 
   const typeCounts = toCountMap(
-    (assets ?? []).map((asset: any) => asset.type ?? 'Other')
+    (assets as ReportAsset[] | null ?? []).map(asset => asset.type ?? 'Other')
   )
 
   const statusCounts = toCountMap(
-    (requests ?? []).map((request: any) => request.status ?? 'unknown')
+    (requests as MaintenanceRequest[] | null ?? []).map(
+      request => request.status ?? 'unknown'
+    )
   )
 
   const totalAssets = assets?.length ?? 0
@@ -85,11 +99,11 @@ export async function ReportsOverview() {
 
   const last30Days = Date.now() - 1000 * 60 * 60 * 24 * 30
   const previous30Days = Date.now() - 1000 * 60 * 60 * 24 * 60
-  const recentCount = (requests ?? []).filter((request: any) => {
+  const recentCount = (requests as MaintenanceRequest[] | null ?? []).filter(request => {
     const ts = new Date(request?.created_at ?? '').getTime()
     return Number.isFinite(ts) && ts >= last30Days
   }).length
-  const previousCount = (requests ?? []).filter((request: any) => {
+  const previousCount = (requests as MaintenanceRequest[] | null ?? []).filter(request => {
     const ts = new Date(request?.created_at ?? '').getTime()
     return Number.isFinite(ts) && ts >= previous30Days && ts < last30Days
   }).length
@@ -125,8 +139,8 @@ export async function ReportsOverview() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
+    <div className="space-y-6 animate-in fade-in duration-700">
+      <div className="space-y-1 animate-in slide-in-from-left-4 duration-700">
         <h1 className="text-2xl font-semibold tracking-tight">
           Reports & Analytics
         </h1>

@@ -203,3 +203,28 @@ export async function generateAssetQr(formData: FormData) {
   }
   redirect(`${redirectTo}?${params.toString()}`)
 }
+
+export async function removeAssetQr(formData: FormData) {
+  const redirectTo = getRedirectPath(formData, '/admin/qr')
+  const id = sanitizeValue(formData.get('id'))
+
+  if (!id) {
+    redirect(`${redirectTo}?error=missing_asset_id`)
+  }
+
+  const supabase = createSupabaseServerClient()
+  const { error } = await supabase
+    .from('assets')
+    .update({ qr_code: null })
+    .eq('id', id)
+
+  if (error) {
+    redirect(`${redirectTo}?error=${encodeURIComponent(error.message)}`)
+  }
+
+  revalidatePath(redirectTo)
+  const params = new URLSearchParams({
+    removed: Date.now().toString(),
+  })
+  redirect(`${redirectTo}?${params.toString()}`)
+}
