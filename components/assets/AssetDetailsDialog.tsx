@@ -14,7 +14,6 @@ type AssetDetails = {
   asset_no?: string | null
   asset_name?: string | null
   asset_categories?: { name?: string | null } | null
-  type?: string | null
   user_name?: string | null
   department?: string | null
   unit?: string | null
@@ -72,7 +71,6 @@ export function AssetDetailsDialog({
     ['Asset ID', asset.asset_no ?? asset.id],
     ['Asset name', asset.asset_name],
     ['Category', asset.asset_categories?.name ?? 'Not set'],
-    ['Type', asset.type],
     ['Assigned user', asset.user_name],
     ['Department', asset.department],
     ['Unit', asset.unit],
@@ -105,7 +103,7 @@ export function AssetDetailsDialog({
       </Button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm">
           <div className="w-full max-w-2xl rounded-lg bg-background shadow-lg">
             <div className="flex items-center justify-between border-b px-6 py-4">
               <div>

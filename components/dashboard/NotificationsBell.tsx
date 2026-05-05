@@ -5,6 +5,7 @@ import { Bell } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabaseClient'
+import { getUserSafely } from '@/lib/supabaseAuth'
 
 type NotificationItem = {
   id: string
@@ -33,7 +34,7 @@ export function NotificationsBell() {
       try {
         const {
           data: { user },
-        } = await supabase.auth.getUser()
+        } = await getUserSafely()
 
         if (!user) {
           if (isActive) {
@@ -82,7 +83,7 @@ export function NotificationsBell() {
     const setupRealtime = async () => {
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await getUserSafely()
 
       if (!user || !isActive) {
         return
@@ -159,35 +160,41 @@ export function NotificationsBell() {
           <Bell className="h-4 w-4" />
           <span className="sr-only">Notifications</span>
           {unreadCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-semibold text-white">
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-semibold text-white dark:bg-blue-500">
               {unreadCount}
             </span>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0">
-        <div className="flex items-center justify-between border-b border-border px-3 py-2">
+      <PopoverContent
+        align="end"
+        className="w-80 overflow-hidden rounded-2xl border border-border/70 bg-white/90 p-0 shadow-lg backdrop-blur-xs supports-[backdrop-filter]:bg-white/80 dark:bg-slate-950/80 dark:shadow-black/20 dark:supports-[backdrop-filter]:bg-slate-950/72"
+      >
+        <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
           <span className="text-sm font-medium text-foreground">
             Notifications
           </span>
         </div>
         <div className="max-h-72 overflow-y-auto">
           {loadingNotifications ? (
-            <p className="px-3 py-4 text-sm text-muted-foreground">
+            <p className="px-4 py-4 text-sm text-muted-foreground">
               Loading notifications...
             </p>
           ) : notificationsError ? (
-            <p className="px-3 py-4 text-sm text-destructive">
+            <p className="px-4 py-4 text-sm text-destructive">
               {notificationsError}
             </p>
           ) : notifications.length === 0 ? (
-            <p className="px-3 py-4 text-sm text-muted-foreground">
+            <p className="px-4 py-4 text-sm text-muted-foreground">
               No notifications yet.
             </p>
           ) : (
-            <ul className="divide-y divide-border">
+            <ul className="divide-y divide-border/70">
               {notifications.map(note => (
-                <li key={note.id} className="px-3 py-3">
+                <li
+                  key={note.id}
+                  className="bg-transparent px-4 py-3 transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
+                >
                   <p className="text-sm font-medium text-foreground">
                     {note.type ? `${note.type} update` : 'System update'}
                   </p>

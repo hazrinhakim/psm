@@ -1,13 +1,16 @@
 import { QrManagement } from '@/components/assets/QrManagement'
 
-export default function AssistantQrPage({
-  searchParams,
-}: {
-  searchParams?: {
-    qr?: string
-    error?: string
-  }
-}) {
-  return <QrManagement basePath="/assistant" searchParams={searchParams} />
+type AssistantQrSearchParams = {
+  qr?: string
+  error?: string
 }
 
+export default async function AssistantQrPage({
+  searchParams,
+}: {
+  searchParams?: Promise<AssistantQrSearchParams>
+}) {
+  const resolvedSearchParams = await searchParams
+
+  return <QrManagement basePath="/assistant" searchParams={resolvedSearchParams} />
+}

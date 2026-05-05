@@ -12,9 +12,9 @@ type MaintenanceSearchParams = {
 export default async function AssistantMaintenancePage({
   searchParams,
 }: {
-  searchParams?: MaintenanceSearchParams | Promise<MaintenanceSearchParams>
+  searchParams?: Promise<MaintenanceSearchParams>
 }) {
-  const resolvedSearchParams = await Promise.resolve(searchParams)
+  const resolvedSearchParams = await searchParams
 
   return (
     <MaintenanceList

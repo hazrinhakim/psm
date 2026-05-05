@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { getSessionSafely } from '@/lib/supabaseAuth'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -26,14 +27,20 @@ export default function SetPasswordPage() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession()
+      const { data, error } = await getSessionSafely()
+
       if (!data.session) {
-        setError('Session not found. Please open the invite link again.')
+        setError(
+          error
+            ? 'Your invite session expired. Please open the invite link again.'
+            : 'Session not found. Please open the invite link again.'
+        )
       }
+
       setReady(true)
     }
 
-    checkSession()
+    void checkSession()
   }, [])
 
   useEffect(() => {

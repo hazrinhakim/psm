@@ -25,9 +25,9 @@ export function AssetScanDialogButton({ basePath }: { basePath: string }) {
           Scan QR
         </Button>
       </DialogTrigger>
-      <DialogOverlay className="bg-white/10 backdrop-blur-xs" />
+      <DialogOverlay className="bg-black/50 backdrop-blur-xs" />
 
-      <DialogContent className="pt-0 w-md">
+      <DialogContent className="w-md border-border bg-background pt-0">
         <DialogHeader>
           <DialogTitle className="sr-only">Scan asset QR</DialogTitle>
         </DialogHeader>

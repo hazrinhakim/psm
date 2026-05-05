@@ -1,5 +1,6 @@
 import { Sidebar } from '@/components/dashboard/Sidebar'
-import { Header } from '@/components/dashboard/Header'
+import { SiteHeader } from '@/components/dashboard/SiteHeader'
+import { PageTransition } from '@/components/ui/page-transition'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 import { normalizeRole, roleToPath } from '@/lib/roles'
@@ -10,7 +11,7 @@ export default async function AdminLayout({
 }: {
   children: ReactNode
 }) {
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -27,15 +28,17 @@ export default async function AdminLayout({
   const basePath = roleToPath(role)
 
   return (
-    <SidebarProvider className="bg-slate-50">
+    <SidebarProvider className="bg-muted/50">
       <Sidebar basePath={basePath} role={role} />
-      <SidebarInset>
-        <Header />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 border border-slate-200 rounded-lg">
-          <div className="mx-auto w-full max-w-6xl">
-            {children}
-          </div>
-        </main>
+      <SidebarInset className="bg-sidebar p-3">
+        <div className="flex min-h-[calc(100svh-1rem)] flex-1 flex-col rounded-xl border bg-card shadow-sm">
+          <SiteHeader />
+          <main className="flex-1 p-4 md:p-6">
+            <div className="mx-auto w-full max-w-6xl">
+              <PageTransition>{children}</PageTransition>
+            </div>
+          </main>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   )

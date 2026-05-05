@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
+import { clearInvalidBrowserSession } from '@/lib/supabaseAuth'
 import {
   Card,
   CardContent,
@@ -39,6 +40,8 @@ export default function AuthConfirmPage() {
     }
 
     const setSession = async () => {
+      await clearInvalidBrowserSession()
+
       const { error } = await supabase.auth.setSession({
         access_token: accessToken,
         refresh_token: refreshToken,
@@ -55,7 +58,7 @@ export default function AuthConfirmPage() {
       router.replace('/auth/set-password')
     }
 
-    setSession()
+    void setSession()
   }, [router])
 
   useEffect(() => {

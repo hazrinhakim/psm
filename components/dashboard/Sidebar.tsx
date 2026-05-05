@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -23,13 +24,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
   SidebarSeparator,
 } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { supabase } from '@/lib/supabaseClient'
-import { useRouter } from 'next/navigation'
+import { getUserSafely, navigateAfterAuthChange } from '@/lib/supabaseAuth'
 
 import type { LucideIcon } from 'lucide-react'
 
@@ -71,9 +71,12 @@ const badgeLabelMap: Record<string, string> = {
 }
 
 const badgeClassMap: Record<string, string> = {
-  admin: 'bg-blue-100 text-blue-700 border-blue-200',
-  admin_assistant: 'bg-purple-100 text-purple-700 border-purple-200',
-  staff: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  admin:
+    'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-200 dark:border-blue-500/30',
+  admin_assistant:
+    'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:text-purple-200 dark:border-purple-500/30',
+  staff:
+    'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-200 dark:border-emerald-500/30',
 }
 
 export function Sidebar({
@@ -84,7 +87,6 @@ export function Sidebar({
   role: UserRole
 }) {
   const pathname = usePathname()
-  const router = useRouter()
   const menu = menus[role] ?? menus.staff
   const [profileName, setProfileName] = useState<string>('User')
   const [profileRole, setProfileRole] = useState<string>(role)
@@ -98,7 +100,7 @@ export function Sidebar({
       try {
         const {
           data: { user },
-        } = await supabase.auth.getUser()
+        } = await getUserSafely()
 
         if (!user) {
           return
@@ -128,17 +130,19 @@ export function Sidebar({
 
   const logout = async () => {
     await supabase.auth.signOut()
-    router.replace('/login')
+    await navigateAfterAuthChange('/login')
   }
 
   return (
-    <SidebarRoot collapsible="icon">
-      <SidebarHeader className="p-4">
+    <SidebarRoot collapsible="offcanvas" className="border-none">
+      <SidebarHeader className="p-4 pt-6">
         <div className="flex items-center gap-2">
           <span className="flex h-6 w-25 items-center justify-center overflow-hidden">
-            <img
+            <Image
               src="/icamsrbg.png"
               alt="ICT"
+              width={100}
+              height={24}
               className="h-full w-full object-cover"
             />
           </span>
@@ -177,7 +181,7 @@ export function Sidebar({
       <SidebarSeparator className="mx-0 border" />
       <SidebarFooter className="p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-700 border border-slate-300">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full border bg-muted text-sm font-semibold text-foreground">
             {profileName.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
@@ -195,7 +199,7 @@ export function Sidebar({
             variant="outline"
             size="sm"
             onClick={logout}
-            className="h-10 w-full justify-start gap-2 bg-red-600 border-red-600 text-white hover:bg-red-700 hover:border-red-700 hover:text-white group-data-[collapsible=icon]:justify-center text-center"
+            className="h-10 w-full justify-start gap-2 border-red-600 bg-red-600 text-white hover:border-red-700 hover:bg-red-700 hover:text-white dark:border-red-500/70 dark:bg-red-500/80 dark:hover:border-red-500 dark:hover:bg-red-500 group-data-[collapsible=icon]:justify-center text-center"
           >
             <LogOut className="h-4 w-4" />
             <span className="group-data-[collapsible=icon]:hidden">
@@ -205,7 +209,6 @@ export function Sidebar({
 
         </div>
       </SidebarFooter>
-      <SidebarRail />
     </SidebarRoot>
   )
 }

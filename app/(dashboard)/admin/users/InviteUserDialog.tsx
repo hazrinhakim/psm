@@ -28,7 +28,6 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-  DrawerOverlay,
 } from '@/components/ui/drawer'
 import { ChevronDown, UserPlus } from 'lucide-react'
 import { inviteUser } from './actions'
@@ -47,24 +46,28 @@ export function InviteUserDialog() {
     <form action={inviteUser} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="invite-email" className="text-foreground/80">Email</Label>
+          <Label htmlFor="invite-email" className="text-foreground/80">
+            Email
+          </Label>
           <Input
             id="invite-email"
             name="email"
             type="email"
             placeholder="user@company.com"
-            className="h-11 bg-white/50 backdrop-blur-sm border-white/20 focus:bg-white/80 transition-all"
+            className="h-11"
             required
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="invite-role" className="text-foreground/80">Role</Label>
+          <Label htmlFor="invite-role" className="text-foreground/80">
+            Role
+          </Label>
           <input type="hidden" name="role" value={role} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="h-11 w-full justify-between bg-white/50 backdrop-blur-sm border-white/20 hover:bg-white/60 transition-all"
+                className="h-11 w-full justify-between"
                 id="invite-role"
                 type="button"
               >
@@ -72,21 +75,24 @@ export function InviteUserDialog() {
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-52 bg-white/90 backdrop-blur-xl border-white/20">
-              <DropdownMenuItem onClick={() => setRole('admin')} className="hover:bg-white/60">
+            <DropdownMenuContent
+              align="start"
+              className="w-52 border-border bg-popover"
+            >
+              <DropdownMenuItem onClick={() => setRole('admin')}>
                 Admin
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setRole('admin_assistant')} className="hover:bg-white/60">
+              <DropdownMenuItem onClick={() => setRole('admin_assistant')}>
                 Admin Assistant
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setRole('staff')} className="hover:bg-white/60">
+              <DropdownMenuItem onClick={() => setRole('staff')}>
                 Staff
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
-      <Button type="submit" className="h-11 w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg">
+      <Button type="submit" className="h-11 w-full">
         Send invite
       </Button>
     </form>
@@ -96,13 +102,12 @@ export function InviteUserDialog() {
     return (
       <Drawer>
         <DrawerTrigger asChild>
-          <Button className="gap-2 bg-black hover:bg-stone-600 hover:text-white shadow-lg">
+          <Button className="h-10 gap-2 px-4">
             <UserPlus className="h-4 w-4" />
             Add User
           </Button>
         </DrawerTrigger>
-        <DrawerOverlay className="bg-black/10 backdrop-blur-xs" />
-        <DrawerContent className="bg-white/80 backdrop-blur-xl border-t border-white/20">
+        <DrawerContent className="border-t border-border bg-background">
           <DrawerHeader>
             <DrawerTitle>Invite a user</DrawerTitle>
             <DrawerDescription>
@@ -112,7 +117,7 @@ export function InviteUserDialog() {
           <div className="px-4">{form}</div>
           <DrawerFooter>
             <DrawerClose asChild>
-              <Button variant="outline" className="border-white/20 bg-white/50 backdrop-blur-sm hover:bg-white/60">
+              <Button variant="outline">
                 Close
               </Button>
             </DrawerClose>
@@ -125,12 +130,12 @@ export function InviteUserDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button className="gap-2 bg-black hover:bg-stone-600 hover:text-white shadow-lg">
+        <Button className="h-10 gap-2 px-4">
           <UserPlus className="h-4 w-4" />
           Add User
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-white/80 backdrop-blur-xl border border-white/20 shadow-2xl">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Invite a user</DialogTitle>
           <DialogDescription>

@@ -13,7 +13,6 @@ type AssetRecord = {
   id: string
   asset_no: string | null
   asset_name: string | null
-  type: string | null
   department: string | null
   unit: string | null
   user_name: string | null
@@ -113,7 +112,6 @@ export function AssetScanResult({ code }: AssetScanResultProps) {
           id,
           asset_no,
           asset_name,
-          type,
           department,
           unit,
           user_name,
@@ -219,12 +217,11 @@ export function AssetScanResult({ code }: AssetScanResultProps) {
               Asset ID: {asset.asset_no ?? asset.id}
             </p>
           </CardHeader>
-          <CardContent className="grid gap-3 text-sm text-muted-foreground md:grid-cols-2">
+          <CardContent className="grid gap-3 text-sm md:grid-cols-2">
             {[
               ['Asset ID', asset.asset_no ?? asset.id],
               ['Asset name', asset.asset_name],
               ['Category', asset.asset_categories?.name ?? 'Not set'],
-              ['Type', asset.type],
               ['Assigned user', asset.user_name],
               ['Department', asset.department],
               ['Unit', asset.unit],
@@ -249,9 +246,16 @@ export function AssetScanResult({ code }: AssetScanResultProps) {
               ['QR code', asset.qr_code],
               ['Accessories', asset.accessories],
             ].map(([label, value]) => (
-              <div key={label}>
-                <span className="font-medium text-foreground">{label}: </span>
-                {formatValue(String(value ?? ''))}
+              <div
+                key={label}
+                className="rounded-lg border bg-background px-3 py-2"
+              >
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {label}
+                </p>
+                <p className="mt-1 text-sm text-foreground">
+                  {formatValue(String(value ?? ''))}
+                </p>
               </div>
             ))}
           </CardContent>

@@ -4,8 +4,8 @@ import { getDashboardStats } from '@/lib/dashboardStats'
 import {
   Card,
   CardContent,
-  CardHeader,
   CardDescription,
+  CardHeader,
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -13,9 +13,9 @@ import {
   AlertCircle,
   MessageSquare,
   Package,
+  Power,
   Wrench,
   Zap,
-  Power,
 } from 'lucide-react'
 
 type MaintenanceRequest = {
@@ -45,8 +45,8 @@ export default async function AdminDashboard() {
       value: totalAssets,
       description: 'All registered items',
       icon: Package,
-      iconStyles: 'bg-gradient-to-br from-blue-100 to-blue-50 text-blue-600 border border-blue-100',
-      accentColor: 'from-blue-400 to-blue-300',
+      iconStyles:
+        'border border-blue-200/70 bg-blue-100/55 text-blue-600 dark:border-blue-500/15 dark:bg-blue-500/12 dark:text-blue-300',
     },
     {
       key: 'active',
@@ -54,8 +54,8 @@ export default async function AdminDashboard() {
       value: activeAssets,
       description: 'Assigned to staff',
       icon: Zap,
-      iconStyles: 'bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 border border-emerald-100',
-      accentColor: 'from-emerald-400 to-emerald-300',
+      iconStyles:
+        'border border-emerald-200/70 bg-emerald-100/50 text-emerald-600 dark:border-emerald-500/15 dark:bg-emerald-500/12 dark:text-emerald-300',
     },
     {
       key: 'maintenance',
@@ -63,8 +63,8 @@ export default async function AdminDashboard() {
       value: pendingMaintenance,
       description: 'Awaiting action',
       icon: AlertCircle,
-      iconStyles: 'bg-gradient-to-br from-amber-100 to-amber-50 text-amber-600 border border-amber-100',
-      accentColor: 'from-amber-400 to-amber-300',
+      iconStyles:
+        'border border-amber-200/70 bg-amber-100/50 text-amber-600 dark:border-amber-500/15 dark:bg-amber-500/12 dark:text-amber-300',
     },
     {
       key: 'feedback',
@@ -72,211 +72,200 @@ export default async function AdminDashboard() {
       value: feedbackCount,
       description: 'Latest staff input',
       icon: MessageSquare,
-      iconStyles: 'bg-gradient-to-br from-sky-100 to-sky-50 text-sky-600 border border-sky-100',
-      accentColor: 'from-sky-400 to-sky-300',
+      iconStyles:
+        'border border-sky-200/70 bg-sky-100/50 text-sky-600 dark:border-sky-500/15 dark:bg-sky-500/12 dark:text-sky-300',
     },
   ]
 
   const totalStatus = Math.max(totalAssets, 0)
+
+  const statusBadgeClassMap: Record<string, string> = {
+    'In Progress':
+      'border-orange-200 bg-orange-100 text-orange-700 hover:bg-orange-100 dark:border-orange-500/30 dark:bg-orange-500/15 dark:text-orange-200 dark:hover:bg-orange-500/15',
+    Resolved:
+      'border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-200 dark:hover:bg-emerald-500/15',
+    Pending:
+      'border-amber-200 bg-amber-100 text-amber-700 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-200 dark:hover:bg-amber-500/15',
+  }
+
   const statusRows = [
     {
-      label: "Active",
+      label: 'Active',
       value: statusOverview.active,
-      bar: "bg-gradient-to-r from-emerald-400 to-emerald-500",
-      dot: "bg-emerald-400 animate-pulse",
+      bar: 'bg-emerald-500',
       icon: Zap,
-      iconClass: "text-emerald-400",
+      iconClass: 'text-emerald-500',
     },
     {
-      label: "Under Maintenance",
+      label: 'Under Maintenance',
       value: statusOverview.maintenance,
-      bar: "bg-gradient-to-r from-amber-400 to-amber-500",
-      dot: "bg-amber-400",
+      bar: 'bg-amber-500',
       icon: Wrench,
-      iconClass: "text-amber-500",
+      iconClass: 'text-amber-500',
     },
     {
-      label: "Inactive",
+      label: 'Inactive',
       value: statusOverview.inactive,
-      bar: "bg-gradient-to-r from-slate-300 to-slate-400",
-      dot: "bg-slate-300",
+      bar: 'bg-slate-400',
       icon: Power,
-      iconClass: "text-slate-500",
+      iconClass: 'text-slate-500',
     },
   ]
 
   return (
-    <div className="space-y-8 p-1">
-      {/* Header dengan sedikit animasi */}
-      <div className="space-y-3 animate-in fade-in duration-700">
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold">
-            Dashboard
-          </h2>
-        </div>
+    <div className="space-y-6 p-1">
+      <div className="space-y-2">
+        <h2 className="text-2xl font-semibold tracking-tight">Dashboard</h2>
       </div>
 
-      {/* Stats Cards dengan efek hover */}
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4 animate-in slide-in-from-bottom-4 duration-500">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {statCards.map(stat => {
           const Icon = stat.icon
           return (
-            <Card key={stat.label} className="group relative overflow-hidden border-2 border-gray-100 hover:border-gray-200 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-              {/* Background gradient effect */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${stat.accentColor} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
-              
-              <CardContent className="pt-6 relative z-10">
-                <div className="flex items-center justify-between">
-                  <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-2xl ${stat.iconStyles} shadow-sm group-hover:scale-110 transition-transform duration-300`}
-                  >
-                    <Icon className="h-6 w-6" />
+            <Card key={stat.label} className="border-border/70 shadow-none">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="text-3xl font-semibold tracking-tight">
+                      {stat.key === 'feedback' ? (
+                        <RealtimeFeedbackCount initialCount={stat.value} />
+                      ) : (
+                        <AnimatedCount value={stat.value} />
+                      )}
+                    </div>
+                    <p className="mt-2 text-sm font-medium text-foreground">
+                      {stat.label}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {stat.description}
+                    </p>
                   </div>
-                  {/* Corner accent */}
-                  <div className={`absolute -right-4 -top-4 h-16 w-16 rounded-full bg-gradient-to-br ${stat.accentColor} opacity-10 group-hover:opacity-20 transition-opacity duration-500`} />
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${stat.iconStyles}`}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </div>
                 </div>
-                <div className="mt-5 text-3xl font-bold tracking-tight">
-                  {stat.key === 'feedback' ? (
-                    <RealtimeFeedbackCount initialCount={stat.value} />
-                  ) : (
-                    <AnimatedCount value={stat.value} />
-                  )}
-                </div>
-                <p className="text-sm font-medium text-gray-700 mt-2">
-                  {stat.label}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {stat.description}
-                </p>
               </CardContent>
             </Card>
           )
         })}
       </div>
 
-      {/* Main Content dengan warna lebih cerah */}
-      <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr] animate-in slide-in-from-bottom-6 duration-700">
-        {/* Maintenance Requests Card */}
-        <Card className="border-2 border-gray-100 hover:border-gray-200 transition-colors duration-300">
-          <CardHeader className="flex flex-row items-center justify-between">
+      <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+        <Card className="border-border/70 shadow-none">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <div>
-              <CardTitle className="text-lg font-bold text-gray-800">
+              <CardTitle className="text-base font-semibold">
                 Recent Maintenance Requests
               </CardTitle>
-              <CardDescription className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
-                Latest issues reported by staff
-              </CardDescription>
+              <CardDescription>Latest issues reported by staff</CardDescription>
             </div>
-            <div className="p-2 rounded-lg bg-amber-50">
-              <Wrench className="h-5 w-5 text-amber-500" />
-            </div>
+            <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {recentMaintenance.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="h-16 w-16 rounded-full bg-emerald-50 flex items-center justify-center mb-4">
-                  <Wrench className="h-8 w-8 text-emerald-400" />
-                </div>
-                <p className="text-base font-medium text-gray-700">
-                  All clear! 🎉
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  No maintenance requests at the moment
+            {recentMaintenance.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  No maintenance requests at the moment.
                 </p>
               </div>
-            )}
-            {recentMaintenance.map((request: MaintenanceRequest, index: number) => (
-              <div
-                key={request.id}
-                className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors duration-200 animate-in fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <div className={`h-3 w-3 rounded-full ${request.status === 'pending' ? 'bg-amber-400 animate-pulse' : 'bg-blue-400'}`} />
-                    <p className="text-sm font-semibold text-gray-800">
-                      {request.title ?? 'Maintenance request'}
-                    </p>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    👤 Requested by {request.profiles?.full_name ?? 'Staff member'}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <Badge
-                    className={`capitalize font-medium
-                      ${request.status === 'In Progress' 
-                        ? 'bg-orange-100 text-orange-700 hover:bg-orange-100' 
-                        : request.status === 'Resolved'
-                        ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'
-                        : request.status === 'Pending'
-                        ? 'bg-amber-100 text-amber-700 hover:bg-amber-100'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-100'
-                      }
-                    `}
+            ) : (
+              recentMaintenance.map(
+                (request: MaintenanceRequest, index: number) => (
+                  <div
+                    key={request.id}
+                    className={`flex items-center justify-between gap-3 py-4 ${
+                      index !== recentMaintenance.length - 1
+                        ? 'border-b border-border/60'
+                        : ''
+                    }`}
                   >
-                    {String(request.status ?? 'Pending').replace('_', ' ')}
-                  </Badge>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    📅 {request.created_at
-                      ? new Date(request.created_at).toLocaleDateString(
-                          'en-US',
-                          {
-                            month: 'short',
-                            day: '2-digit',
-                            year: 'numeric',
-                          }
-                        )
-                      : 'Date unavailable'}
-                  </p>
-                </div>
-              </div>
-            ))}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`h-2 w-2 rounded-full ${
+                            request.status === 'pending'
+                              ? 'bg-amber-500'
+                              : 'bg-slate-400'
+                          }`}
+                        />
+                        <p className="text-sm font-medium text-foreground">
+                          {request.title ?? 'Maintenance request'}
+                        </p>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Requested by {request.profiles?.full_name ?? 'Staff member'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <Badge
+                        className={`capitalize border font-medium ${
+                          statusBadgeClassMap[request.status ?? ''] ??
+                          'border-border bg-muted text-muted-foreground hover:bg-muted dark:hover:bg-muted'
+                        }`}
+                      >
+                        {String(request.status ?? 'Pending').replace('_', ' ')}
+                      </Badge>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {request.created_at
+                          ? new Date(request.created_at).toLocaleDateString(
+                              'en-US',
+                              {
+                                month: 'short',
+                                day: '2-digit',
+                                year: 'numeric',
+                              }
+                            )
+                          : 'Date unavailable'}
+                      </p>
+                    </div>
+                  </div>
+                )
+              )
+            )}
           </CardContent>
         </Card>
 
-        {/* Asset Status Card */}
-        <Card className="border-2 border-gray-100 hover:border-gray-200 transition-colors duration-300">
-            <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="border-border/70 shadow-none">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <div>
-              <CardTitle className="text-lg font-bold text-gray-800">
+              <CardTitle className="text-base font-semibold">
                 Asset Status Overview
               </CardTitle>
-              <CardDescription className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-blue-400 animate-pulse"></span>
-                Current asset activity snapshot
-              </CardDescription>
+              <CardDescription>Current asset activity snapshot</CardDescription>
             </div>
           </CardHeader>
-          <CardContent>
-            {statusRows.map((row, index) => {
+          <CardContent className="space-y-4">
+            {statusRows.map(row => {
               const percent = totalStatus
                 ? Math.round((row.value / totalStatus) * 100)
                 : 0
+
               return (
-                <div key={row.label} className="space-y-3 animate-in fade-in" style={{ animationDelay: `${index * 150}ms` }}>
+                <div key={row.label} className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-3">
                       <row.icon className={`h-4 w-4 ${row.iconClass}`} />
-                      <span className="font-medium text-gray-700">{row.label}</span>
+                      <span className="font-medium text-foreground">
+                        {row.label}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-gray-800">{row.value}</span>
+                      <span className="font-semibold text-foreground">
+                        {row.value}
+                      </span>
                       <span className="text-muted-foreground">assets</span>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
-                      <div
-                        className={`h-2 rounded-full ${row.bar} transition-all duration-1000 ease-out`}
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground"></span>
-                      <span className="font-medium text-gray-700">{percent}%</span>
-                    </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={`h-full rounded-full ${row.bar}`}
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                  <div className="text-right text-xs text-muted-foreground">
+                    {percent}%
                   </div>
                 </div>
               )

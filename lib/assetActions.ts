@@ -18,7 +18,7 @@ function sanitizeValue(value: FormDataEntryValue | null) {
 }
 
 async function assertAssigneeExists(
-  supabase: ReturnType<typeof createSupabaseServerClient>,
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   assignee: string | null,
   redirectTo: string
 ) {
@@ -46,7 +46,7 @@ export async function createAsset(formData: FormData) {
     redirect(`${redirectTo}?error=missing_required_fields`)
   }
 
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
   await assertAssigneeExists(supabase, userName, redirectTo)
   const { error } = await supabase.from('assets').insert({
     asset_no: assetNo,
@@ -96,7 +96,7 @@ export async function updateAsset(formData: FormData) {
     redirect(`${redirectTo}?error=missing_asset_id`)
   }
 
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
   await assertAssigneeExists(supabase, userName, redirectTo)
   const { error } = await supabase
     .from('assets')
@@ -148,7 +148,7 @@ export async function deleteAsset(formData: FormData) {
     redirect(`${redirectTo}?error=missing_asset_id`)
   }
 
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
   const { error } = await supabase.from('assets').delete().eq('id', id)
 
   if (error) {
@@ -169,7 +169,7 @@ export async function generateAssetQr(formData: FormData) {
     redirect(`${redirectTo}?error=missing_asset_id`)
   }
 
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
   let code = assetNo
 
   if (!code) {
@@ -212,7 +212,7 @@ export async function removeAssetQr(formData: FormData) {
     redirect(`${redirectTo}?error=missing_asset_id`)
   }
 
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
   const { error } = await supabase
     .from('assets')
     .update({ qr_code: null })

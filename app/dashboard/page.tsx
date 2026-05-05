@@ -1,41 +1,22 @@
-import { AppSidebar } from "@/components/app-sidebar"
-import { ChartAreaInteractive } from "@/components/chart-area-interactive"
-import { DataTable } from "@/components/data-table"
-import { SectionCards } from "@/components/section-cards"
-import { SiteHeader } from "@/components/site-header"
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar"
-import type { CSSProperties } from "react"
+import { redirect } from 'next/navigation'
+import { createSupabaseServerClient } from '@/lib/supabaseServer'
+import { normalizeRole, roleToPath } from '@/lib/roles'
 
-import data from "./data.json"
+export default async function DashboardIndexPage() {
+  const supabase = await createSupabaseServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-const sidebarStyle: CSSProperties = {
-  "--sidebar-width": "calc(var(--spacing) * 72)",
-  "--header-height": "calc(var(--spacing) * 12)",
-}
+  if (!user) {
+    redirect('/login')
+  }
 
-export default function Page() {
-  return (
-    <SidebarProvider
-      style={sidebarStyle}
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <SectionCards />
-              <div className="px-4 lg:px-6">
-                <ChartAreaInteractive />
-              </div>
-              <DataTable data={data} />
-            </div>
-          </div>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
-  )
+  const { data } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  redirect(roleToPath(normalizeRole(data?.role)))
 }

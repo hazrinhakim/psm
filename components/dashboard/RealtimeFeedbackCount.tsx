@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { AnimatedCount } from '@/components/dashboard/AnimatedCount'
+import { getUserSafely } from '@/lib/supabaseAuth'
 
 type RealtimeFeedbackCountProps = {
   initialCount: number
@@ -20,7 +21,7 @@ export function RealtimeFeedbackCount({
     const loadCount = async () => {
       const {
         data: { user },
-      } = await supabase.auth.getUser()
+      } = await getUserSafely()
 
       if (!user || !isActive) {
         return

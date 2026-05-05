@@ -49,7 +49,7 @@ export function QrSearchForm({ basePath, query }: QrSearchFormProps) {
             name="q"
             placeholder="Search by asset no, asset name or user name"
             defaultValue={query}
-            className="h-11 rounded-full border-muted pl-11 pr-4 shadow-sm focus-visible:ring-2 focus-visible:ring-offset-0"
+            className="h-11 rounded-full pl-11 pr-4"
           />
         </div>
         <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">

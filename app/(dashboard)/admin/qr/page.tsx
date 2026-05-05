@@ -1,15 +1,19 @@
 import { QrManagement } from '@/components/assets/QrManagement'
 
-export default function AdminQrPage({
+type AdminQrSearchParams = {
+  qr?: string
+  removed?: string
+  error?: string
+  q?: string
+  asset?: string
+}
+
+export default async function AdminQrPage({
   searchParams,
 }: {
-  searchParams?: {
-    qr?: string
-    removed?: string
-    error?: string
-    q?: string
-    asset?: string
-  }
+  searchParams?: Promise<AdminQrSearchParams>
 }) {
-  return <QrManagement basePath="/admin" searchParams={searchParams} />
+  const resolvedSearchParams = await searchParams
+
+  return <QrManagement basePath="/admin" searchParams={resolvedSearchParams} />
 }

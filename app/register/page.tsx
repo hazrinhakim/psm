@@ -2,13 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import {
+  clearInvalidBrowserSession,
+  navigateAfterAuthChange,
+} from '@/lib/supabaseAuth'
 import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
@@ -19,7 +23,6 @@ import { toast } from 'sonner'
 import { Spinner } from '@/components/ui/spinner'
 
 export default function RegisterPage() {
-  const router = useRouter()
   const [mode, setMode] = useState<'signup' | 'invite'>('signup')
   const [ready, setReady] = useState(false)
   const [fullName, setFullName] = useState('')
@@ -52,6 +55,8 @@ export default function RegisterPage() {
     setMode('invite')
 
     const acceptInvite = async () => {
+      await clearInvalidBrowserSession()
+
       const { data, error } = await supabase.auth.setSession({
         access_token: accessToken,
         refresh_token: refreshToken,
@@ -72,7 +77,7 @@ export default function RegisterPage() {
       setReady(true)
     }
 
-    acceptInvite()
+    void acceptInvite()
   }, [])
 
   useEffect(() => {
@@ -137,7 +142,7 @@ export default function RegisterPage() {
         return
       }
 
-      router.replace(roleToPath(role))
+      await navigateAfterAuthChange(roleToPath(role))
       return
     }
 
@@ -189,7 +194,7 @@ export default function RegisterPage() {
     }
 
     if (data.session) {
-      router.replace(roleToPath(role))
+      await navigateAfterAuthChange(roleToPath(role))
       return
     }
 
@@ -199,39 +204,55 @@ export default function RegisterPage() {
 
   if (success) {
     return (
-      <Card className="mx-auto w-full max-w-sm shadow-sm">
-        <CardHeader className="space-y-2 text-center">
-          <CardTitle className="text-2xl">Confirm your email</CardTitle>
+      <Card className="mx-auto w-full max-w-lg border-border/70">
+        <CardHeader className="space-y-3 text-center">
+          <div className="mx-auto rounded-full border border-border/70 bg-background/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+            Registration
+          </div>
+          <CardTitle className="text-3xl tracking-[-0.03em]">
+            Confirm your email
+          </CardTitle>
           <CardDescription>
             We sent a confirmation link to {email}. Follow it to finish
             setting up your account.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button asChild className="w-full">
+        <CardContent className="pb-2">
+          <Button asChild className="h-11 w-full">
             <Link href="/login">Back to login</Link>
           </Button>
         </CardContent>
+        <CardFooter className="border-t border-border/70 pt-5 text-xs text-muted-foreground">
+          Check your inbox and spam folder if the email does not appear.
+        </CardFooter>
       </Card>
     )
   }
 
   return (
-    <Card className="mx-auto w-full max-w-sm shadow-sm">
-      <CardHeader className="space-y-2 text-center">
-        <CardTitle className="text-2xl">
+    <Card className="mx-auto w-full max-w-lg border-border/70">
+      <CardHeader className="space-y-3 text-center">
+        <div className="mx-auto rounded-full border border-border/70 bg-background/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+          {mode === 'invite' ? 'Invitation Setup' : 'Create Account'}
+        </div>
+        <CardTitle className="text-3xl tracking-[-0.03em]">
           {mode === 'invite' ? 'Complete your invite' : 'Create account'}
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="mx-auto max-w-md leading-6">
           {mode === 'invite'
             ? 'Set a password to activate your account.'
             : 'Get started with asset and maintenance tracking.'}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleRegister} className="space-y-4">
+        <form onSubmit={handleRegister} className="space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="full-name">Full name</Label>
+            <Label
+              htmlFor="full-name"
+              className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+            >
+              Full name
+            </Label>
             <Input
               id="full-name"
               type="text"
@@ -245,7 +266,12 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label
+              htmlFor="email"
+              className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+            >
+              Email
+            </Label>
             <Input
               id="email"
               type="email"
@@ -258,39 +284,55 @@ export default function RegisterPage() {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Create a password"
-              value={password}
-              onChange={event => setPassword(event.target.value)}
-              autoComplete="new-password"
-              required
-              disabled={!ready}
-            />
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label
+                htmlFor="password"
+                className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+              >
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Create a password"
+                value={password}
+                onChange={event => setPassword(event.target.value)}
+                autoComplete="new-password"
+                required
+                disabled={!ready}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="confirm-password"
+                className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+              >
+                Confirm password
+              </Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                placeholder="Repeat password"
+                value={confirmPassword}
+                onChange={event => setConfirmPassword(event.target.value)}
+                autoComplete="new-password"
+                required
+                disabled={!ready}
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="confirm-password">Confirm password</Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              placeholder="Repeat password"
-              value={confirmPassword}
-              onChange={event => setConfirmPassword(event.target.value)}
-              autoComplete="new-password"
-              required
-              disabled={!ready}
-            />
-          </div>
-
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error ? (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
+              {error}
+            </div>
+          ) : null}
 
           <Button
             type="submit"
-            className="w-full"
+            className="h-11 w-full"
             disabled={loading || !ready}
           >
             {loading && <Spinner className="mr-2" />}
@@ -306,7 +348,10 @@ export default function RegisterPage() {
           {mode !== 'invite' && (
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{' '}
-              <Link href="/login" className="text-foreground underline">
+              <Link
+                href="/login"
+                className="font-medium text-foreground underline-offset-4 hover:underline"
+              >
                 Sign in
               </Link>
             </p>

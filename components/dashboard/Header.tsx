@@ -5,12 +5,9 @@ import { NotificationsBell } from '@/components/dashboard/NotificationsBell'
 
 export function Header() {
   return (
-    <header className="h-14 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between px-4 md:px-6 rounded-lg border-slate-200">
+    <header className="flex h-14 items-center justify-between rounded-lg border border-border bg-background/80 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6">
       <div className="flex items-center gap-2">
         <SidebarTrigger className="md:hidden" />
-        <span className="text-sm font-medium text-muted-foreground">
-          ICT Asset Management System
-        </span>
       </div>
       <div className="flex items-center gap-2">
         <NotificationsBell />

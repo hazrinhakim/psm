@@ -1,24 +1,22 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { supabase } from "@/lib/supabaseClient"
+import { getUserSafely } from "@/lib/supabaseAuth"
 import { toast } from "sonner"
 import { Spinner } from "@/components/ui/spinner"
 
 type FeedbackFormProps = {
-  role: 'staff' | 'admin_assistant'
+  role: 'staff' | 'assistant' | 'admin_assistant'
   heading?: string
-  description?: string
 }
 
 export function FeedbackForm({
   role,
   heading = "Send Feedback",
-  description = "Share suggestions or report concerns with the asset team.",
 }: FeedbackFormProps) {
   const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(false)
@@ -31,7 +29,7 @@ export function FeedbackForm({
 
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await getUserSafely()
 
     if (!user) {
       setStatus("Please log in to send feedback.")
@@ -78,34 +76,39 @@ export function FeedbackForm({
   }
 
   return (
-    <Card className="w-full max-w-2xl">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-xl">{heading}</CardTitle>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={submitFeedback} className="space-y-4">
+    <div className="space-y-6 p-1">
+      <div className="space-y-2">
+        <h2 className="text-2xl font-semibold tracking-tight">{heading}</h2>
+      </div>
+
+      <div className="w-full max-w-2xl space-y-5">
+        <form onSubmit={submitFeedback} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="feedback-message">Message</Label>
             <Textarea
               id="feedback-message"
               value={message}
               onChange={event => setMessage(event.target.value)}
-              className="min-h-[160px]"
+              className="min-h-[180px] resize-none"
+              placeholder="Share your suggestions, issues, or feature ideas..."
               required
             />
           </div>
 
           {status && (
-            <p className="text-sm text-muted-foreground">{status}</p>
+            <div className="rounded-xl border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+              {status}
+            </div>
           )}
 
-          <Button type="submit" disabled={loading}>
-            {loading && <Spinner className="mr-2" />}
-            {loading ? "Sending..." : "Submit feedback"}
-          </Button>
+          <div>
+            <Button type="submit" disabled={loading} className="gap-2">
+              {loading && <Spinner className="mr-1" />}
+              {loading ? "Sending..." : "Submit feedback"}
+            </Button>
+          </div>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

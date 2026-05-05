@@ -118,45 +118,44 @@ export function AssetScan({
   }, [stopCamera])
 
   return (
-    <div className="w-full max-w-sm mx-auto">
-        <CardContent>
-          
-            <div className="space-y-3 rounded-xl border bg-muted/40 p-4">
-              <CardTitle className="text-sm">Scan Asset QR</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                Use your camera on mobile/tablet or enter a QR value manually.
-              </p>
-              <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-muted">
-                <video
-                  ref={videoRef}
-                  className="h-full w-full object-cover"
-                  muted
-                  playsInline
-                />
-                {!cameraActive && (
-                  <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-                    Camera preview
-                  </div>
-                )}
-                <div className="pointer-events-none absolute inset-4 rounded-xl border border-dashed border-white/70" />
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" onClick={startCamera} disabled={cameraActive}>
-                  {cameraActive ? 'Camera Active' : 'Start Camera'}
-                </Button>
-                {cameraActive && (
-                  <Button type="button" variant="outline" onClick={stopCamera}>
-                    Stop
-                  </Button>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Allow camera access, then align the QR inside the frame.
-              </p>
-            </div>
+    <div className="mx-auto w-full max-w-sm">
+      <CardContent className="p-0">
+        <div className="space-y-4 rounded-xl border bg-background p-4">
+          <div className="space-y-1">
+            <CardTitle className="text-sm">Scan Asset QR</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Use your camera on mobile or tablet, then align the code inside
+              the frame.
+            </p>
+          </div>
 
-          
-        </CardContent>
+          <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-muted/30">
+            <video
+              ref={videoRef}
+              className="h-full w-full object-cover"
+              muted
+              playsInline
+            />
+            {!cameraActive && (
+              <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+                Camera preview
+              </div>
+            )}
+            <div className="pointer-events-none absolute inset-4 rounded-lg border border-dashed border-foreground/20" />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" onClick={startCamera} disabled={cameraActive}>
+              {cameraActive ? 'Camera Active' : 'Start Camera'}
+            </Button>
+            {cameraActive && (
+              <Button type="button" variant="outline" onClick={stopCamera}>
+                Stop
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
     </div>
   )
 }

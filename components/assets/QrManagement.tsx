@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import {
   Card,
   CardContent,
@@ -19,7 +20,7 @@ import {
 } from '@/components/ui/dialog'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 import { generateAssetQr, removeAssetQr } from '@/lib/assetActions'
-import { QrCode, Search } from 'lucide-react'
+import { QrCode } from 'lucide-react'
 import { QrAssetSelect } from '@/components/assets/QrAssetSelect'
 import { QrSearchForm } from '@/components/assets/QrSearchForm'
 import {
@@ -89,7 +90,7 @@ export async function QrManagement({
   const query = (resolvedSearchParams?.q ?? '').trim()
   const hasQuery = Boolean(query)
 
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
 
   let searchResults: QrAsset[] = []
   if (hasQuery) {
@@ -143,14 +144,11 @@ export async function QrManagement({
   }))
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-700">
-      <div className="space-y-1 animate-in slide-in-from-left-4 duration-700">
-        <h1 className="text-lg font-semibold tracking-tight">
+    <div className="space-y-6 p-1">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight">
           QR Code Management
         </h1>
-        <p className="text-sm text-muted-foreground">
-          Search assets, generate QR codes, and manage downloads.
-        </p>
       </div>
 
       {(resolvedSearchParams?.qr ||
@@ -182,7 +180,7 @@ export async function QrManagement({
         />
       )}
 
-      <div className="grid gap-6 animate-in slide-in-from-bottom-4 duration-700">
+      <div className="grid gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Generate QR Code</CardTitle>
@@ -218,13 +216,16 @@ export async function QrManagement({
               />
             </form>
 
-            <div className="rounded-lg border bg-muted/20 p-4">
+            <div className="rounded-lg border bg-background p-4">
               {showQr ? (
                 <div className="flex flex-col items-center gap-3 text-center">
-                  <img
+                  <Image
                     src={qrImageUrl(selectedCode)}
                     alt={`QR for ${selectedName}`}
-                    className="h-48 w-48 rounded-md border bg-white p-2"
+                    width={192}
+                    height={192}
+                    unoptimized
+                    className="h-48 w-48 rounded-md border bg-background p-2"
                   />
                   <div className="text-sm">
                     <p className="font-medium">{selectedCode}</p>
@@ -241,7 +242,7 @@ export async function QrManagement({
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2 py-6 text-center text-sm text-muted-foreground">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-md border bg-muted/40">
                     <QrCode className="h-5 w-5" />
                   </span>
                   <p>Generate a QR code to preview it here.</p>
@@ -270,7 +271,7 @@ export async function QrManagement({
                   <AccordionItem key={asset.id} value={asset.id}>
                     <AccordionTrigger className="hover:no-underline">
                       <div className="flex w-full items-center gap-3">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-md border bg-muted/40 text-muted-foreground">
                           <QrCode className="h-4 w-4" />
                         </span>
                         <div className="min-w-0 text-left">
@@ -317,7 +318,7 @@ export async function QrManagement({
                         <QrDownloadButton href={qrDownloadUrl(code)} />
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button size="sm" variant="destructive">
+                            <Button size="sm" variant="outline">
                               Delete QR Code
                             </Button>
                           </DialogTrigger>

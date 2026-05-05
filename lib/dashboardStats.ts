@@ -2,8 +2,20 @@ import { createSupabaseServerClient } from './supabaseServer'
 
 type DashboardScope = 'all' | 'assigned'
 
+type MaintenanceProfile = {
+  full_name?: string | null
+}
+
+type RawRecentMaintenanceItem = {
+  id: string
+  title?: string | null
+  status?: string | null
+  created_at?: string | null
+  profiles?: MaintenanceProfile | MaintenanceProfile[] | null
+}
+
 export async function getDashboardStats(scope: DashboardScope = 'all') {
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
 
   const {
     data: { user },
@@ -99,6 +111,15 @@ export async function getDashboardStats(scope: DashboardScope = 'all') {
   }
   const { data: recentMaintenance } = await recentMaintenanceQuery
 
+  const normalizedRecentMaintenance = (
+    (recentMaintenance ?? []) as RawRecentMaintenanceItem[]
+  ).map(request => ({
+    ...request,
+    profiles: Array.isArray(request.profiles)
+      ? (request.profiles[0] ?? null)
+      : (request.profiles ?? null),
+  }))
+
   const total = totalAssets ?? 0
   const active = activeAssets ?? 0
   const pending = pendingMaintenance ?? 0
@@ -114,7 +135,7 @@ export async function getDashboardStats(scope: DashboardScope = 'all') {
     inProgressMaintenance: inProgress,
     completedMaintenance: completedMaintenance ?? 0,
     feedbackCount: feedbackCount ?? 0,
-    recentMaintenance: recentMaintenance ?? [],
+    recentMaintenance: normalizedRecentMaintenance,
     statusOverview: {
       active,
       maintenance,

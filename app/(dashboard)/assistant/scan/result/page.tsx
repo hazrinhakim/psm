@@ -1,13 +1,15 @@
 import { AssetScanResult } from '@/components/scan/AssetScanResult'
 
 type AssistantScanResultPageProps = {
-  searchParams?: {
+  searchParams?: Promise<{
     code?: string
-  }
+  }>
 }
 
-export default function AssistantScanResultPage({
+export default async function AssistantScanResultPage({
   searchParams,
 }: AssistantScanResultPageProps) {
-  return <AssetScanResult code={searchParams?.code} />
+  const resolvedSearchParams = await searchParams
+
+  return <AssetScanResult code={resolvedSearchParams?.code} />
 }

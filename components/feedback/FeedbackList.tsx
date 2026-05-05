@@ -1,4 +1,4 @@
-import { FeedbackItem } from '@/components/feedback/FeedbackItem'
+import { FeedbackListClient } from '@/components/feedback/FeedbackListClient'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 import { createSupabaseAdminClient } from '@/lib/supabaseAdmin'
 
@@ -21,7 +21,7 @@ type NotificationEntry = {
 }
 
 export async function FeedbackList() {
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -36,13 +36,8 @@ export async function FeedbackList() {
 
   if (!user || profile?.role !== 'admin') {
     return (
-      <div className="space-y-2 animate-in fade-in duration-700">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Feedback
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Only administrators can view feedback submissions.
-        </p>
+      <div className="space-y-2 p-1">
+        <h1 className="text-2xl font-semibold tracking-tight">Feedback</h1>
       </div>
     )
   }
@@ -83,20 +78,21 @@ export async function FeedbackList() {
 
   if (error) {
     return (
-      <div className="space-y-2 animate-in fade-in duration-700">
+      <div className="space-y-2 p-1">
         <h1 className="text-2xl font-semibold tracking-tight">
           Feedback
         </h1>
-        <p className="text-sm text-muted-foreground">
-          Unable to load feedback. Please try again later.
-        </p>
       </div>
     )
   }
 
   const createdByIds = Array.from(
-    new Set((feedback as FeedbackEntry[] | null ?? []).map(entry => entry.created_by))
-  ).filter(Boolean)
+    new Set(
+      (feedback as FeedbackEntry[] | null ?? [])
+        .map(entry => entry.created_by)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    )
+  )
 
   const { data: profiles } = createdByIds.length
     ? await client
@@ -128,68 +124,60 @@ export async function FeedbackList() {
     })
   }
 
-  const getDisplayName = (entry: FeedbackEntry) =>
-    profileMap.get(entry.created_by) ??
-    entry.email ??
-    emailMap.get(entry.created_by) ??
-    'Staff member'
+  const getDisplayName = (entry: FeedbackEntry) => {
+    const createdById = entry.created_by
+    return (
+      (createdById ? profileMap.get(createdById) : undefined) ??
+      entry.email ??
+      (createdById ? emailMap.get(createdById) : undefined) ??
+      'Staff member'
+    )
+  }
 
-  const getDisplayEmail = (entry: FeedbackEntry) =>
-    entry.email ?? emailMap.get(entry.created_by) ?? null
+  const getDisplayEmail = (entry: FeedbackEntry) => {
+    const createdById = entry.created_by
+    return entry.email ?? (createdById ? emailMap.get(createdById) : null) ?? null
+  }
+
+  const feedbackItems = (feedback as FeedbackEntry[] | null ?? []).map(entry => {
+    const displayName = getDisplayName(entry)
+    const displayEmail = getDisplayEmail(entry)
+    const dateLabel = entry.created_at
+      ? new Date(entry.created_at).toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: '2-digit',
+        })
+      : 'Date unavailable'
+    const detailDateLabel = entry.created_at
+      ? new Date(entry.created_at).toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : 'Date unavailable'
+
+    return {
+      id: entry.id,
+      name: displayName,
+      email: displayEmail,
+      role: entry.role ?? 'staff',
+      dateLabel,
+      detailDateLabel,
+      message: entry.message ?? '',
+      isUnread: unreadFeedbackIds.has(entry.id),
+    }
+  })
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-700">
-      <div className="space-y-1 animate-in slide-in-from-left-4 duration-700">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Feedback
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Review suggestions and comments submitted by staff.
-        </p>
+    <div className="space-y-6 p-1">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Feedback</h1>
       </div>
 
-      {!feedback?.length && (
-        <p className="text-sm text-muted-foreground">
-          No feedback has been submitted yet.
-        </p>
-      )}
-
-      <div className="grid gap-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
-        {(feedback as FeedbackEntry[] | null)?.map(entry => {
-          const displayName = getDisplayName(entry)
-          const displayEmail = getDisplayEmail(entry)
-          const dateLabel = entry.created_at
-            ? new Date(entry.created_at).toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: '2-digit',
-              })
-            : 'Date unavailable'
-          const detailDateLabel = entry.created_at
-            ? new Date(entry.created_at).toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-              })
-            : 'Date unavailable'
-
-          return (
-            <FeedbackItem
-              key={entry.id}
-              name={displayName}
-              email={displayEmail}
-              role={entry.role ?? 'staff'}
-              dateLabel={dateLabel}
-              detailDateLabel={detailDateLabel}
-              message={entry.message}
-              isUnread={unreadFeedbackIds.has(entry.id)}
-              feedbackId={entry.id}
-            />
-          )
-        })}
-      </div>
+      <FeedbackListClient items={feedbackItems} />
     </div>
   )
 }

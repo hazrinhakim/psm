@@ -1,10 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CalendarIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   Popover,
@@ -111,7 +110,6 @@ export function AssetCategoryTypeFields({
   categoryPlaceholder = 'Select category',
   defaultCategoryId,
   defaultType,
-  typePlaceholder = 'Auto from category',
 }: {
   categories: Category[]
   categoryId: string
@@ -119,7 +117,6 @@ export function AssetCategoryTypeFields({
   categoryPlaceholder?: string
   defaultCategoryId?: string | null
   defaultType?: string | null
-  typePlaceholder?: string
 }) {
   const categoryMap = useMemo(
     () => new Map(categories.map(category => [category.id, category.name])),
@@ -130,18 +127,21 @@ export function AssetCategoryTypeFields({
   )
   const [typeValue, setTypeValue] = useState(defaultType ?? '')
 
-  const syncType = (nextCategoryId: string) => {
-    if (nextCategoryId === 'none') {
-      setTypeValue('')
-      return
-    }
-    const label = categoryMap.get(nextCategoryId) ?? ''
-    setTypeValue(label)
-  }
+  const syncType = useCallback(
+    (nextCategoryId: string) => {
+      if (nextCategoryId === 'none') {
+        setTypeValue('')
+        return
+      }
+      const label = categoryMap.get(nextCategoryId) ?? ''
+      setTypeValue(label)
+    },
+    [categoryMap]
+  )
 
   useEffect(() => {
     syncType(categoryValue)
-  }, [categoryValue, categoryMap])
+  }, [categoryValue, syncType])
 
   return (
     <>
@@ -174,17 +174,7 @@ export function AssetCategoryTypeFields({
           </Select>
         </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor={typeName}>Type</Label>
-        <Input
-          id={typeName}
-          name="type"
-          value={typeValue}
-          readOnly
-          placeholder={typePlaceholder}
-          className="h-11"
-        />
-      </div>
+      <input id={typeName} type="hidden" name="type" value={typeValue} />
     </>
   )
 }

@@ -16,7 +16,7 @@ type NotificationItem = {
 }
 
 export default async function StaffNotificationsPage() {
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -26,9 +26,6 @@ export default async function StaffNotificationsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Notifications</CardTitle>
-          <CardDescription>
-            Please sign in to view your notifications.
-          </CardDescription>
         </CardHeader>
       </Card>
     )
@@ -41,14 +38,11 @@ export default async function StaffNotificationsPage() {
     .order('date', { ascending: false })
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
+    <div className="space-y-6 p-1">
+      <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">
           Notifications
         </h1>
-        <p className="text-sm text-muted-foreground">
-          Updates about maintenance, warranties, and scheduled work.
-        </p>
       </div>
 
       {!notifications?.length && (

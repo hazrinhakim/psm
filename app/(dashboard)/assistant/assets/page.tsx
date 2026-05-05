@@ -1,15 +1,22 @@
 import { AssetManagement } from '@/components/assets/AssetManagement'
 
-export default function AssistantAssetsPage({
+export default async function AssistantAssetsPage({
   searchParams,
 }: {
-  searchParams?: {
+  searchParams?: Promise<{
     saved?: string
     updated?: string
     deleted?: string
     error?: string
-  }
+    q?: string
+  }>
 }) {
-  return <AssetManagement basePath="/assistant" searchParams={searchParams} />
-}
+  const resolvedSearchParams = await searchParams
 
+  return (
+    <AssetManagement
+      basePath="/assistant"
+      searchParams={resolvedSearchParams}
+    />
+  )
+}

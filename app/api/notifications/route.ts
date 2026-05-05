@@ -5,7 +5,7 @@ import { createSupabaseServerClient } from '@/lib/supabaseServer'
 type NotificationKind = 'maintenance' | 'feedback'
 
 export async function POST(request: Request) {
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const supabase = createSupabaseServerClient()
+  const supabase = await createSupabaseServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()

@@ -25,7 +25,7 @@ export function UserSearchForm({ query }: UserSearchFormProps) {
   return (
     <form
       ref={formRef}
-      className="flex w-full flex-col gap-3 sm:flex-row sm:items-center animate-in fade-in slide-in-from-bottom-2 duration-700"
+      className="flex w-full flex-col gap-3 sm:flex-row sm:items-center"
       onSubmit={event => {
         event.preventDefault()
         const formData = new FormData(event.currentTarget)
@@ -44,13 +44,13 @@ export function UserSearchForm({ query }: UserSearchFormProps) {
           name="q"
           placeholder="Search users by name, email, or role..."
           defaultValue={query}
-          className="h-10 rounded-full border-muted pl-11 pr-4 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-0 transition-all bg-white"
+          className="h-10 rounded-full pl-11 pr-4"
         />
       </div>
       <div className="flex items-center gap-2">
         <Button
           type="submit"
-          className="h-10 gap-2 bg-black hover:bg-stone-600 shadow-md hover:shadow-lg transition-all duration-200 px-6"
+          className="h-10 gap-2 rounded-full px-6"
           disabled={pending || isClearing}
         >
           {pending ? <Spinner /> : <Search className="h-4 w-4" />}
@@ -59,7 +59,7 @@ export function UserSearchForm({ query }: UserSearchFormProps) {
         <Button
           type="button"
           variant="outline"
-          className="h-10 border-2 hover:bg-gray-100 transition-colors px-6"
+          className="h-10 rounded-full px-6"
           disabled={pending || isClearing}
           onClick={() => {
             if (!query) {
