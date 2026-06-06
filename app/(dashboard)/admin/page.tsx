@@ -1,4 +1,5 @@
 import { AnimatedCount } from '@/components/dashboard/AnimatedCount'
+import { AssetStatusOverview } from '@/components/dashboard/AssetStatusOverview'
 import { RealtimeFeedbackCount } from '@/components/dashboard/RealtimeFeedbackCount'
 import { getDashboardStats } from '@/lib/dashboardStats'
 import {
@@ -9,14 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import {
-  AlertCircle,
-  MessageSquare,
-  Package,
-  Power,
-  Wrench,
-  Zap,
-} from 'lucide-react'
+import { AlertCircle, MessageSquare, Package, Wrench, Zap } from 'lucide-react'
 
 type MaintenanceRequest = {
   id: string
@@ -77,40 +71,14 @@ export default async function AdminDashboard() {
     },
   ]
 
-  const totalStatus = Math.max(totalAssets, 0)
-
   const statusBadgeClassMap: Record<string, string> = {
+    Pending:
+      'border-amber-200 bg-amber-100 text-amber-700 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-200 dark:hover:bg-amber-500/15',
     'In Progress':
       'border-orange-200 bg-orange-100 text-orange-700 hover:bg-orange-100 dark:border-orange-500/30 dark:bg-orange-500/15 dark:text-orange-200 dark:hover:bg-orange-500/15',
     Resolved:
       'border-emerald-200 bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-200 dark:hover:bg-emerald-500/15',
-    Pending:
-      'border-amber-200 bg-amber-100 text-amber-700 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-200 dark:hover:bg-amber-500/15',
   }
-
-  const statusRows = [
-    {
-      label: 'Active',
-      value: statusOverview.active,
-      bar: 'bg-emerald-500',
-      icon: Zap,
-      iconClass: 'text-emerald-500',
-    },
-    {
-      label: 'Under Maintenance',
-      value: statusOverview.maintenance,
-      bar: 'bg-amber-500',
-      icon: Wrench,
-      iconClass: 'text-amber-500',
-    },
-    {
-      label: 'Inactive',
-      value: statusOverview.inactive,
-      bar: 'bg-slate-400',
-      icon: Power,
-      iconClass: 'text-slate-500',
-    },
-  ]
 
   return (
     <div className="space-y-6 p-1">
@@ -152,14 +120,16 @@ export default async function AdminDashboard() {
         })}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+      <div className="grid gap-6 xl:grid-cols-[1.3fr_1fr]">
         <Card className="border-border/70 shadow-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <div>
               <CardTitle className="text-base font-semibold">
                 Recent Maintenance Requests
               </CardTitle>
-              <CardDescription>Latest issues reported by staff</CardDescription>
+              <CardDescription>
+                New requests that are still pending review
+              </CardDescription>
             </div>
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -167,7 +137,7 @@ export default async function AdminDashboard() {
             {recentMaintenance.length === 0 ? (
               <div className="py-8 text-center">
                 <p className="text-sm text-muted-foreground">
-                  No maintenance requests at the moment.
+                  No new pending maintenance requests at the moment.
                 </p>
               </div>
             ) : (
@@ -175,50 +145,48 @@ export default async function AdminDashboard() {
                 (request: MaintenanceRequest, index: number) => (
                   <div
                     key={request.id}
-                    className={`flex items-center justify-between gap-3 py-4 ${
+                    className={`rounded-2xl border border-border/70 bg-muted/[0.14] px-4 py-4 ${
                       index !== recentMaintenance.length - 1
-                        ? 'border-b border-border/60'
+                        ? 'mb-3'
                         : ''
                     }`}
                   >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`h-2 w-2 rounded-full ${
-                            request.status === 'pending'
-                              ? 'bg-amber-500'
-                              : 'bg-slate-400'
-                          }`}
-                        />
-                        <p className="text-sm font-medium text-foreground">
-                          {request.title ?? 'Maintenance request'}
-                        </p>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 space-y-2">
+                        <div className="flex items-center gap-3">
+                          <div className="h-2.5 w-2.5 rounded-full bg-amber-500 shadow-[0_0_0_4px_rgba(245,158,11,0.14)]" />
+                          <p className="truncate text-sm font-medium text-foreground sm:text-[15px]">
+                            {request.title ?? 'Maintenance request'}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          <span className="rounded-full bg-background px-2.5 py-1 ring-1 ring-border/60">
+                            Requested by{' '}
+                            {request.profiles?.full_name ?? 'Staff member'}
+                          </span>
+                          <span className="rounded-full bg-background px-2.5 py-1 ring-1 ring-border/60">
+                            {request.created_at
+                              ? new Date(request.created_at).toLocaleDateString(
+                                  'en-US',
+                                  {
+                                    month: 'short',
+                                    day: '2-digit',
+                                    year: 'numeric',
+                                  }
+                                )
+                              : 'Date unavailable'}
+                          </span>
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Requested by {request.profiles?.full_name ?? 'Staff member'}
-                      </p>
-                    </div>
-                    <div className="text-right">
+
                       <Badge
-                        className={`capitalize border font-medium ${
-                          statusBadgeClassMap[request.status ?? ''] ??
+                        className={`shrink-0 capitalize border font-medium ${
+                          statusBadgeClassMap[request.status ?? 'Pending'] ??
                           'border-border bg-muted text-muted-foreground hover:bg-muted dark:hover:bg-muted'
                         }`}
                       >
                         {String(request.status ?? 'Pending').replace('_', ' ')}
                       </Badge>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        {request.created_at
-                          ? new Date(request.created_at).toLocaleDateString(
-                              'en-US',
-                              {
-                                month: 'short',
-                                day: '2-digit',
-                                year: 'numeric',
-                              }
-                            )
-                          : 'Date unavailable'}
-                      </p>
                     </div>
                   </div>
                 )
@@ -227,51 +195,11 @@ export default async function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/70 shadow-none">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <div>
-              <CardTitle className="text-base font-semibold">
-                Asset Status Overview
-              </CardTitle>
-              <CardDescription>Current asset activity snapshot</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {statusRows.map(row => {
-              const percent = totalStatus
-                ? Math.round((row.value / totalStatus) * 100)
-                : 0
-
-              return (
-                <div key={row.label} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-3">
-                      <row.icon className={`h-4 w-4 ${row.iconClass}`} />
-                      <span className="font-medium text-foreground">
-                        {row.label}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-foreground">
-                        {row.value}
-                      </span>
-                      <span className="text-muted-foreground">assets</span>
-                    </div>
-                  </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className={`h-full rounded-full ${row.bar}`}
-                      style={{ width: `${percent}%` }}
-                    />
-                  </div>
-                  <div className="text-right text-xs text-muted-foreground">
-                    {percent}%
-                  </div>
-                </div>
-              )
-            })}
-          </CardContent>
-        </Card>
+        <AssetStatusOverview
+          active={statusOverview.active}
+          maintenance={statusOverview.maintenance}
+          inactive={statusOverview.inactive}
+        />
       </div>
     </div>
   )

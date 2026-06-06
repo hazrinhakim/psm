@@ -186,8 +186,11 @@ export function ReportsDashboard({
     )
   }
 
+  const timelineChartMinWidth = Math.max(timelineChartData.length * 64, 320)
+  const categoryChartMinWidth = Math.max(categoryChartData.length * 72, 320)
+
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       <div className="space-y-2">
         <CardTitle className="text-2xl font-semibold tracking-tight">
           Reports & Analytics
@@ -204,72 +207,79 @@ export function ReportsDashboard({
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-        <Card className="border-border/70 shadow-none">
+        <Card className="min-w-0 border-border/70 shadow-none">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <div>
+            <div className="min-w-0">
               <CardTitle className="text-base font-semibold">
                 Timeline Breakdown
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-balance">
                 Asset distribution over the selected {report.meta.periodLabel.toLowerCase()} period
               </CardDescription>
             </div>
           </CardHeader>
-          <CardContent className={cn('h-80', loading && 'opacity-60')}>
-            <ChartContainer
-              config={timelineChartConfig}
-              className="h-full w-full"
-            >
-              <ComposedChart
-                accessibilityLayer
-                data={timelineChartData}
-                margin={{ left: 8, right: 8, top: 8 }}
+          <CardContent className={cn('px-4 pb-4 sm:px-6 sm:pb-6', loading && 'opacity-60')}>
+            <div className="-mx-4 overflow-x-auto pb-2 sm:mx-0">
+              <div
+                className="h-72 min-w-[320px] pr-4 sm:h-80 sm:pr-0"
+                style={{ minWidth: `${timelineChartMinWidth}px` }}
               >
-                <defs>
-                  <linearGradient id="timelineAssetsFade" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--color-assets)" stopOpacity={0.3} />
-                    <stop offset="70%" stopColor="var(--color-assets)" stopOpacity={0.14} />
-                    <stop offset="100%" stopColor="var(--color-assets)" stopOpacity={0.04} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  minTickGap={24}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  tickLine={false}
-                  axisLine={false}
-                  width={32}
-                />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent indicator="line" />}
-                />
-                <Area
-                  dataKey="assets"
-                  type="monotone"
-                  fill="url(#timelineAssetsFade)"
-                  stroke="none"
-                />
-                <Line
-                  dataKey="assets"
-                  type="monotone"
-                  stroke="var(--color-assets)"
-                  strokeWidth={2.5}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-              </ComposedChart>
-            </ChartContainer>
+                <ChartContainer
+                  config={timelineChartConfig}
+                  className="h-full w-full min-w-0"
+                >
+                  <ComposedChart
+                    accessibilityLayer
+                    data={timelineChartData}
+                    margin={{ left: 0, right: 8, top: 8 }}
+                  >
+                    <defs>
+                      <linearGradient id="timelineAssetsFade" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--color-assets)" stopOpacity={0.3} />
+                        <stop offset="70%" stopColor="var(--color-assets)" stopOpacity={0.14} />
+                        <stop offset="100%" stopColor="var(--color-assets)" stopOpacity={0.04} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      minTickGap={20}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tickLine={false}
+                      axisLine={false}
+                      width={28}
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent indicator="line" />}
+                    />
+                    <Area
+                      dataKey="assets"
+                      type="monotone"
+                      fill="url(#timelineAssetsFade)"
+                      stroke="none"
+                    />
+                    <Line
+                      dataKey="assets"
+                      type="monotone"
+                      stroke="var(--color-assets)"
+                      strokeWidth={2.5}
+                      dot={false}
+                      activeDot={{ r: 4 }}
+                    />
+                  </ComposedChart>
+                </ChartContainer>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border/70 shadow-none">
+        <Card className="min-w-0 border-border/70 shadow-none">
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold">
               Report Snapshot
@@ -296,7 +306,7 @@ export function ReportsDashboard({
       </div>
 
       <div className="grid gap-6">
-        <Card className="border-border/70 shadow-none">
+        <Card className="min-w-0 border-border/70 shadow-none">
           <CardHeader className="pb-4">
             <CardTitle className="text-base font-semibold">
               Asset Count by Category
@@ -305,46 +315,53 @@ export function ReportsDashboard({
               Filtered asset volume grouped by category
             </CardDescription>
           </CardHeader>
-          <CardContent className={cn('h-80', loading && 'opacity-60')}>
-            <ChartContainer
-              config={categoryChartConfig}
-              className="h-full w-full"
-            >
-              <BarChart
-                accessibilityLayer
-                data={categoryChartData}
-                margin={{ left: 8, right: 8, top: 8 }}
+          <CardContent className={cn('px-4 pb-4 sm:px-6 sm:pb-6', loading && 'opacity-60')}>
+            <div className="-mx-4 overflow-x-auto pb-2 sm:mx-0">
+              <div
+                className="h-72 min-w-[320px] pr-4 sm:h-80 sm:pr-0"
+                style={{ minWidth: `${categoryChartMinWidth}px` }}
               >
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  minTickGap={20}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  tickLine={false}
-                  axisLine={false}
-                  width={32}
-                />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent indicator="dot" />}
-                />
-                <Bar
-                  dataKey="assets"
-                  fill="var(--color-assets)"
-                  radius={[10, 10, 0, 0]}
-                />
-              </BarChart>
-            </ChartContainer>
+                <ChartContainer
+                  config={categoryChartConfig}
+                  className="h-full w-full min-w-0"
+                >
+                  <BarChart
+                    accessibilityLayer
+                    data={categoryChartData}
+                    margin={{ left: 0, right: 8, top: 8 }}
+                  >
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      minTickGap={16}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tickLine={false}
+                      axisLine={false}
+                      width={28}
+                    />
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent indicator="dot" />}
+                    />
+                    <Bar
+                      dataKey="assets"
+                      fill="var(--color-assets)"
+                      radius={[10, 10, 0, 0]}
+                    />
+                  </BarChart>
+                </ChartContainer>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="border-border/70 shadow-none">
+      <Card className="min-w-0 border-border/70 shadow-none">
         <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-1.5">
             <CardTitle className="flex items-center gap-2 text-base font-semibold">
@@ -354,7 +371,7 @@ export function ReportsDashboard({
               Forward-looking asset risk scoring based on age and maintenance history
             </CardDescription>
           </div>
-          <div className="rounded-full border border-blue-200/90 bg-blue-100/60 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/12 dark:text-blue-200">
+          <div className="max-w-full rounded-full border border-blue-200/90 bg-blue-100/60 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/12 dark:text-blue-200">
             Forecast window: next 90 days
           </div>
         </CardHeader>
@@ -381,7 +398,7 @@ export function ReportsDashboard({
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-            <div className="rounded-3xl border border-border/70 bg-card p-5">
+            <div className="min-w-0 rounded-3xl border border-border/70 bg-card p-5">
               <div className="space-y-1">
                 <h3 className="text-sm font-semibold text-foreground">
                   Recommended actions
@@ -396,15 +413,15 @@ export function ReportsDashboard({
                     key={item.title}
                     className="rounded-2xl border border-border/60 bg-card p-4"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-medium text-foreground">{item.title}</p>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="break-words font-medium text-foreground">{item.title}</p>
                         <p className="mt-1 text-sm leading-6 text-muted-foreground">
                           {item.detail}
                         </p>
                       </div>
                       <span
-                        className="rounded-full border border-blue-200/90 bg-blue-100/60 px-2.5 py-0.5 text-[11px] font-medium leading-5 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/12 dark:text-blue-200"
+                        className="w-fit rounded-full border border-blue-200/90 bg-blue-100/60 px-2.5 py-0.5 text-[11px] font-medium leading-5 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/12 dark:text-blue-200"
                       >
                         {item.priority}
                       </span>
@@ -414,7 +431,7 @@ export function ReportsDashboard({
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               <div className="rounded-3xl border border-border/70 bg-card p-5">
                 <h3 className="text-sm font-semibold text-foreground">
                   Risk overview
@@ -452,18 +469,18 @@ export function ReportsDashboard({
                         key={asset.id}
                         className="rounded-2xl border border-border/60 bg-muted/[0.14] p-4"
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="space-y-1">
-                            <p className="font-medium text-foreground">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0 space-y-1">
+                            <p className="break-words font-medium text-foreground">
                               {asset.assetName}
                             </p>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="break-words text-sm text-muted-foreground">
                               {[asset.assetNo, asset.type, asset.category].join(
                                 ' / '
                               )}
                             </p>
                           </div>
-                          <div className="flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
+                          <div className="flex w-fit items-center gap-1 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
                             <TriangleAlert className="h-3.5 w-3.5" />
                             {asset.riskScore}
                           </div>
@@ -489,7 +506,7 @@ export function ReportsDashboard({
         </CardContent>
       </Card>
 
-      <Card className="border-border/70 shadow-none">
+      <Card className="min-w-0 border-border/70 shadow-none">
         <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-1.5">
             <CardTitle className="text-base font-semibold">
@@ -499,12 +516,12 @@ export function ReportsDashboard({
               Asset count grouped by selected category
             </CardDescription>
           </div>
-          <div className="flex flex-wrap gap-2 lg:justify-end">
-            <Button variant="outline" className="gap-2" onClick={handleExportPdf}>
+          <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap lg:justify-end">
+            <Button variant="outline" className="w-full gap-2 sm:w-auto" onClick={handleExportPdf}>
               <Download className="h-4 w-4" />
               Export PDF
             </Button>
-            <Button className="gap-2" onClick={handleExportExcel}>
+            <Button className="w-full gap-2 sm:w-auto" onClick={handleExportExcel}>
               <FileSpreadsheet className="h-4 w-4" />
               Export Excel
             </Button>
@@ -512,7 +529,7 @@ export function ReportsDashboard({
         </CardHeader>
 
         <CardContent className="p-0">
-          <div className="space-y-4 px-6 pb-4">
+          <div className="space-y-4 px-4 pb-4 sm:px-6">
             <div className="grid gap-4 md:grid-cols-2">
               <FilterField label="Category">
                 <MultiSelectDropdown
@@ -549,7 +566,7 @@ export function ReportsDashboard({
               </FilterField>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               <Button
                 variant="outline"
                 size="sm"
@@ -566,12 +583,12 @@ export function ReportsDashboard({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[420px] text-sm">
               <thead className="bg-muted/40 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 <tr className="border-b">
-                  <th className="py-4 pl-6 pr-3 font-medium">Category</th>
+                  <th className="py-4 pl-4 pr-3 font-medium sm:pl-6">Category</th>
                   <th className="px-3 py-4 text-center font-medium">Total Assets</th>
-                  <th className="px-6 py-4 text-center font-medium">Percentage</th>
+                  <th className="px-4 py-4 text-center font-medium sm:px-6">Percentage</th>
                 </tr>
               </thead>
               <tbody>
@@ -579,7 +596,7 @@ export function ReportsDashboard({
                   <tr>
                     <td
                       colSpan={3}
-                      className="h-48 px-6 text-center text-muted-foreground"
+                      className="h-48 px-4 text-center text-muted-foreground sm:px-6"
                     >
                       No assets found for the selected filters.
                     </td>
@@ -597,13 +614,13 @@ export function ReportsDashboard({
                         key={label}
                         className="border-b last:border-b-0 transition-colors hover:bg-muted/30"
                       >
-                        <td className="py-4 pl-6 pr-3 font-medium text-foreground">
+                        <td className="py-4 pl-4 pr-3 font-medium text-foreground sm:pl-6">
                           {label}
                         </td>
                         <td className="px-3 py-4 text-center font-medium text-foreground">
                           {count}
                         </td>
-                        <td className="px-6 py-4 text-center text-muted-foreground">
+                        <td className="px-4 py-4 text-center text-muted-foreground sm:px-6">
                           {share}%
                         </td>
                       </tr>
@@ -657,11 +674,11 @@ function MultiSelectDropdown({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="h-11 w-full justify-between">
-          <span className="truncate">{summary}</span>
+          <span className="min-w-0 truncate text-left">{summary}</span>
           <Filter className="h-4 w-4 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)]">
+      <DropdownMenuContent className="w-[var(--radix-dropdown-menu-trigger-width)] max-w-[calc(100vw-2rem)]">
         <DropdownMenuLabel>Select options</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {options.map(option => (
@@ -680,9 +697,11 @@ function MultiSelectDropdown({
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3 last:border-b-0 last:pb-0">
+    <div className="flex flex-col gap-1 border-b border-border/60 pb-3 last:border-b-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <span className="text-muted-foreground">{label}</span>
-      <span className="text-right font-medium text-foreground">{value}</span>
+      <span className="break-words text-left font-medium text-foreground sm:text-right">
+        {value}
+      </span>
     </div>
   )
 }

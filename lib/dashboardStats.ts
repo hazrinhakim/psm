@@ -104,6 +104,7 @@ export async function getDashboardStats(scope: DashboardScope = 'all') {
       profiles ( full_name )
     `
     )
+    .eq('status', 'Pending')
     .order('created_at', { ascending: false })
     .limit(3)
   if (isScoped) {

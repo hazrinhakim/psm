@@ -1162,8 +1162,29 @@ function createExcelBorder() {
   }
 }
 
-function styleExcelHeaderRow(row: { eachCell: (...args: any[]) => void }) {
-  row.eachCell((cell: any) => {
+type ExcelStyleCell = {
+  font?: unknown
+  fill?: unknown
+  border?: unknown
+  value?: unknown
+}
+
+type ExcelStyleRow = {
+  eachCell: unknown
+}
+
+type ExcelWritableRow = {
+  getCell: (index: number) => ExcelStyleCell
+}
+
+type ExcelWritableSheet = {
+  getRow: (row: number) => ExcelWritableRow
+}
+
+function styleExcelHeaderRow(row: ExcelStyleRow) {
+  ;(
+    row.eachCell as (callback: (cell: ExcelStyleCell) => void) => void
+  )(cell => {
     cell.font = { bold: true, color: { argb: 'FF0F172A' } }
     cell.fill = {
       type: 'pattern',
@@ -1175,7 +1196,7 @@ function styleExcelHeaderRow(row: { eachCell: (...args: any[]) => void }) {
 }
 
 function writeExcelSection(
-  sheet: { getRow: (row: number) => any },
+  sheet: ExcelWritableSheet,
   startRow: number,
   title: string,
   rows: Array<Array<string | number>>
