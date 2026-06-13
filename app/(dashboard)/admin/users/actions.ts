@@ -4,6 +4,30 @@ import { redirect } from 'next/navigation'
 import { createSupabaseAdminClient } from '@/lib/supabaseAdmin'
 import { normalizeRole } from '@/lib/roles'
 
+function resolveSiteUrl() {
+  const explicitUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()
+  if (explicitUrl) {
+    return explicitUrl.replace(/\/$/, '')
+  }
+
+  const vercelProductionUrl =
+    process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim()
+  if (vercelProductionUrl) {
+    return `https://${vercelProductionUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}`
+  }
+
+  const vercelPreviewUrl = process.env.VERCEL_URL?.trim()
+  if (vercelPreviewUrl) {
+    return `https://${vercelPreviewUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}`
+  }
+
+  if (process.env.NODE_ENV !== 'production') {
+    return 'http://localhost:3000'
+  }
+
+  return null
+}
+
 export async function inviteUser(formData: FormData) {
   const email = String(formData.get('email') ?? '').trim()
   const role = normalizeRole(
@@ -20,8 +44,12 @@ export async function inviteUser(formData: FormData) {
     redirect('/admin/users?error=missing_service_role_key')
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
-  const redirectTo = `${siteUrl.replace(/\/$/, '')}/register`
+  const siteUrl = resolveSiteUrl()
+  if (!siteUrl) {
+    redirect('/admin/users?error=missing_site_url')
+  }
+
+  const redirectTo = `${siteUrl}/register`
 
   const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
     redirectTo,
