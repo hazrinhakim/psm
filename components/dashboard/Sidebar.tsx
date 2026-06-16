@@ -14,6 +14,7 @@ import {
   MessageSquare,
   FileBarChart,
   LogOut,
+  Bot,
 } from 'lucide-react'
 import type { UserRole } from '@/lib/roles'
 import {
@@ -46,6 +47,7 @@ const menus: Record<
       { label: 'Maintenance Request', path: '/maintenance', icon: Wrench },
       { label: 'Feedback Management', path: '/feedback', icon: MessageSquare },
       { label: 'Reports & Analytics', path: '/reports', icon: FileBarChart },
+      { label: 'AI Assistant', path: '/chatbot', icon: Bot },
     ],
     admin_assistant: [
       { label: 'Dashboard', path: '', icon: LayoutDashboard },
@@ -54,6 +56,7 @@ const menus: Record<
       { label: 'Maintenance Request', path: '/maintenance', icon: Wrench },
       { label: 'Feedback Management', path: '/feedback', icon: MessageSquare },
       { label: 'Reports & Analytics', path: '/reports', icon: FileBarChart },
+      { label: 'AI Assistant', path: '/chatbot', icon: Bot },
     ],
     staff: [
       { label: 'Dashboard', path: '', icon: LayoutDashboard },
@@ -61,6 +64,7 @@ const menus: Record<
       { label: 'Maintenance Request', path: '/maintenance', icon: Wrench },
       { label: 'Feedback Management', path: '/feedback', icon: MessageSquare },
       { label: 'Notifications', path: '/notifications', icon: Bell },
+      { label: 'AI Assistant', path: '/chatbot', icon: Bot },
     ],
   }
 
@@ -137,7 +141,7 @@ export function Sidebar({
     <SidebarRoot collapsible="offcanvas" className="border-none">
       <SidebarHeader className="p-4 pt-6">
         <div className="flex items-center gap-2">
-          <span className="flex h-6 w-25 items-center justify-center overflow-hidden">
+          <span className="flex h-6 w-24 items-center justify-center overflow-hidden sm:w-28">
             <Image
               src="/icamsrbg.png"
               alt="ICT"
@@ -157,7 +161,7 @@ export function Sidebar({
       <SidebarContent className="px-2 pb-4">
         <SidebarMenu>
           {menu.map(item => {
-            const href = `${basePath}${item.path}`
+            const href = item.path === '/chatbot' ? item.path : `${basePath}${item.path}`
             const Icon = item.icon
             const isActive = pathname === href
 

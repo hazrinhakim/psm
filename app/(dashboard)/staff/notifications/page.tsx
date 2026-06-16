@@ -15,6 +15,13 @@ type NotificationItem = {
   read?: boolean | null
 }
 
+function cleanNotificationMessage(message?: string | null) {
+  return (message ?? 'No details provided.')
+    .replace(/^\[feedback:[a-f0-9-]+\]\s*/i, '')
+    .replace(/^\[maintenance:[a-f0-9-]+\]\s*/i, '')
+    .replace(/^\[schedule:[a-f0-9-]+\]\[alert:[a-z_]+\]\s*/i, '')
+}
+
 export default async function StaffNotificationsPage() {
   const supabase = await createSupabaseServerClient()
   const {
@@ -69,7 +76,7 @@ export default async function StaffNotificationsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
-              {note.message ?? 'No details provided.'}
+              {cleanNotificationMessage(note.message)}
             </CardContent>
           </Card>
         ))}

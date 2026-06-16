@@ -22,6 +22,9 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
+MAINTENANCE_SCHEDULER_SECRET=your_scheduler_secret
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
 What these mean:
@@ -34,12 +37,19 @@ What these mean:
   Needed for admin actions like inviting users
 - `NEXT_PUBLIC_SITE_URL`
   Used to create login and invite links
+- `MAINTENANCE_SCHEDULER_SECRET`
+  Secret used by the maintenance scheduler endpoint for cron execution
+- `GEMINI_API_KEY`
+  API key for the maintenance troubleshooting assistant powered by Gemini
+- `GEMINI_MODEL`
+  Optional Gemini model override for the assistant route. Default is `gemini-2.5-flash`
 
 Important:
 
 - In local development, use `http://localhost:3000`
 - In Vercel production, use your deployed URL such as `https://icams-prk.vercel.app`
 - Never share or commit your real secret keys
+- In Vercel, you may use either `MAINTENANCE_SCHEDULER_SECRET` or `CRON_SECRET`
 
 ## How To Run Locally
 
@@ -90,9 +100,29 @@ npm run start
 
 ```env
 NEXT_PUBLIC_SITE_URL=https://icams-prk.vercel.app
+MAINTENANCE_SCHEDULER_SECRET=your_scheduler_secret
 ```
 
 5. Deploy
+
+### Maintenance Scheduler
+
+This project includes a Vercel cron entry in `vercel.json`:
+
+```text
+/api/maintenance/run-scheduler
+```
+
+Recommended setup:
+
+- set `MAINTENANCE_SCHEDULER_SECRET` in Vercel
+- or set `CRON_SECRET` if you want to follow Vercel cron secret convention
+
+The scheduler is used to:
+
+- auto-create preventive maintenance requests
+- send due soon alerts
+- send overdue alerts
 
 ## Important Supabase Setup
 
@@ -144,7 +174,7 @@ Check:
 - Supabase redirect URLs
 - Vercel environment variables
 
-### Camera cannot be used for QR scan
+                                                                           ### Camera cannot be used for QR scan
 
 Check:
 

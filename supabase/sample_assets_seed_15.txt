@@ -1,0 +1,199 @@
+ICAMS Sample Asset Seed - 15 Records
+====================================
+
+Purpose
+-------
+This SQL inserts 15 sample asset records into `public.assets` and
+automatically assigns them to currently registered users in `public.profiles`.
+
+What it does
+------------
+- Inserts 15 assets
+- Rotates assignment across available registered profiles
+- Adds basic maintenance fields so the maintenance and analytics modules
+  already have meaningful data to display
+
+Before you run
+--------------
+- Make sure you already have registered users in `public.profiles`
+- This script does not create users
+- If `public.profiles.full_name` is empty for some users, those rows are ignored
+
+SQL
+---
+
+do $$
+declare
+  profile_count integer;
+begin
+  select count(*)
+  into profile_count
+  from public.profiles
+  where coalesce(trim(full_name), '') <> '';
+
+  if profile_count = 0 then
+    raise exception 'No registered profiles with full_name found. Please create users first.';
+  end if;
+end
+$$;
+
+with selected_profiles as (
+  select
+    full_name,
+    row_number() over (order by created_at nulls last, full_name) as rn
+  from public.profiles
+  where coalesce(trim(full_name), '') <> ''
+),
+profile_meta as (
+  select count(*) as total_profiles
+  from selected_profiles
+),
+seed_assets as (
+  select *
+  from (
+    values
+      ('AST-2026-001', 'Dell OptiPlex 7010 Admin Unit', 'Desktop', 'Computer', 'ICT Unit', 'Administration', '2024', '2024-01-15', '3500.00', 'Dell', 'Government Supply', 'OptiPlex 7010', 'SN-DELL-001', 'Intel Core i5', '16GB', '512GB SSD', true, 'preventive', 'medium', 180, '2026-01-10', '2026-07-09', '2027-01-15', 5, '2029-01-15', 'Routine desktop for admin counter operations.'),
+      ('AST-2026-002', 'HP ProDesk Finance Unit', 'Desktop', 'Computer', 'Finance Unit', 'Finance', '2023', '2023-06-20', '3400.00', 'HP', 'Government Supply', 'ProDesk 400', 'SN-HP-002', 'Intel Core i5', '8GB', '256GB SSD', true, 'preventive', 'high', 120, '2026-02-15', '2026-06-15', '2026-12-31', 4, '2028-06-20', 'Finance office workstation with frequent use.'),
+      ('AST-2026-003', 'Lenovo ThinkCentre HR', 'Desktop', 'Computer', 'HR Unit', 'Human Resource', '2022', '2022-09-12', '3200.00', 'Lenovo', 'Government Supply', 'ThinkCentre M70', 'SN-LEN-003', 'Intel Core i3', '8GB', '256GB SSD', true, 'hybrid', 'medium', 150, '2026-01-20', '2026-06-19', '2026-11-30', 4, '2027-09-12', 'HR workstation used for payroll and staff files.'),
+      ('AST-2026-004', 'Acer Aspire Front Desk', 'Laptop', 'Laptop', 'Customer Service', 'Administration', '2024', '2024-03-08', '2900.00', 'Acer', 'Government Supply', 'Aspire 5', 'SN-ACE-004', 'Intel Core i5', '16GB', '512GB SSD', true, 'preventive', 'medium', 180, '2026-03-01', '2026-08-28', '2027-03-08', 5, '2029-03-08', 'Portable unit for service counter usage.'),
+      ('AST-2026-005', 'Asus ExpertBook Meeting Room', 'Laptop', 'Laptop', 'Administration Unit', 'Administration', '2023', '2023-04-18', '4100.00', 'Asus', 'Government Supply', 'ExpertBook B1', 'SN-ASU-005', 'Intel Core i7', '16GB', '512GB SSD', true, 'hybrid', 'high', 90, '2026-04-01', '2026-06-30', '2026-10-01', 4, '2028-04-18', 'Shared laptop for meetings and management use.'),
+      ('AST-2026-006', 'Canon Printer Registry Office', 'Printer', 'Printer', 'Registry Unit', 'Administration', '2021', '2021-11-05', '1800.00', 'Canon', 'Government Supply', 'ImageClass MF3010', 'SN-CAN-006', null, null, null, true, 'preventive', 'high', 90, '2026-03-10', '2026-06-08', null, 6, '2027-11-05', 'High-usage printer for incoming and outgoing documents.'),
+      ('AST-2026-007', 'Brother Printer Procurement', 'Printer', 'Printer', 'Procurement Unit', 'Procurement', '2022', '2022-07-14', '1750.00', 'Brother', 'Government Supply', 'HL-L3270CDW', 'SN-BRO-007', null, null, null, true, 'preventive', 'medium', 120, '2026-02-28', '2026-06-28', null, 6, '2028-07-14', 'Color printer for procurement documentation.'),
+      ('AST-2026-008', 'Epson Scanner Records Section', 'Scanner', 'Scanner', 'Records Unit', 'Administration', '2024', '2024-02-11', '2100.00', 'Epson', 'Government Supply', 'DS-530 II', 'SN-EPS-008', null, null, null, true, 'preventive', 'medium', 180, '2026-01-15', '2026-07-14', null, 5, '2029-02-11', 'Scanner for records digitization.'),
+      ('AST-2026-009', 'Projector Training Room A', 'Projector', 'Projector', 'Training Unit', 'Administration', '2023', '2023-08-22', '2600.00', 'Epson', 'Government Supply', 'EB-X06', 'SN-PRO-009', null, null, null, true, 'hybrid', 'medium', 180, '2026-02-01', '2026-07-31', null, 5, '2028-08-22', 'Projector for internal training room.'),
+      ('AST-2026-010', 'Network Switch Level 2', 'Network', 'Network', 'ICT Unit', 'ICT', '2022', '2022-05-30', '5200.00', 'Cisco', 'Government Supply', 'CBS250-24T-4G', 'SN-CIS-010', null, null, null, true, 'preventive', 'critical', 90, '2026-04-10', '2026-07-09', null, 7, '2027-05-30', 'Core access switch for office network segment.'),
+      ('AST-2026-011', 'Access Point East Wing', 'Network', 'Network', 'ICT Unit', 'ICT', '2024', '2024-06-17', '1450.00', 'TP-Link', 'Government Supply', 'EAP620 HD', 'SN-TPL-011', null, null, null, true, 'preventive', 'medium', 180, '2026-01-25', '2026-07-24', null, 5, '2029-06-17', 'Wireless access point serving east wing offices.'),
+      ('AST-2026-012', 'Surface Laptop Director Office', 'Laptop', 'Laptop', 'Management Unit', 'Management', '2024', '2024-01-09', '6200.00', 'Microsoft', 'Government Supply', 'Surface Laptop 5', 'SN-MIC-012', 'Intel Core i7', '16GB', '512GB SSD', true, 'hybrid', 'high', 120, '2026-03-20', '2026-07-18', '2027-01-09', 5, '2029-01-09', 'Executive laptop for official management work.'),
+      ('AST-2026-013', 'UPS Server Room A', 'UPS', 'Power Backup', 'ICT Unit', 'ICT', '2021', '2021-12-01', '4800.00', 'APC', 'Government Supply', 'Smart-UPS 2200VA', 'SN-APC-013', null, null, null, true, 'preventive', 'critical', 60, '2026-04-20', '2026-06-19', null, 6, '2027-12-01', 'Critical UPS protecting server room equipment.'),
+      ('AST-2026-014', 'CCTV NVR Security Office', 'Security', 'Security Device', 'Security Unit', 'Security', '2023', '2023-10-03', '4300.00', 'Hikvision', 'Government Supply', 'DS-7608NXI', 'SN-HIK-014', null, null, null, true, 'preventive', 'high', 120, '2026-03-12', '2026-07-10', null, 5, '2028-10-03', 'NVR for internal CCTV operations.'),
+      ('AST-2026-015', 'Desktop Operations Room', 'Desktop', 'Computer', 'Operations Unit', 'Operations', '2022', '2022-02-16', '3300.00', 'Dell', 'Government Supply', 'OptiPlex 5090', 'SN-DELL-015', 'Intel Core i5', '8GB', '512GB SSD', true, 'preventive', 'medium', 150, '2026-02-10', '2026-07-10', '2026-12-31', 5, '2028-02-16', 'Shared workstation for operations support.')
+  ) as t(
+    asset_no,
+    asset_name,
+    type,
+    category_name,
+    unit,
+    department,
+    year,
+    purchase_date,
+    price,
+    supplier,
+    source,
+    model,
+    serial_no,
+    processor,
+    ram_capacity,
+    hdd_capacity,
+    maintenance_enabled,
+    maintenance_strategy,
+    maintenance_priority,
+    service_interval_days,
+    last_service_date,
+    next_service_date,
+    warranty_expiry_date,
+    expected_lifespan_years,
+    replacement_target_date,
+    maintenance_notes
+  )
+),
+inserted_categories as (
+  insert into public.asset_categories (id, name)
+  select
+    gen_random_uuid(),
+    seed.category_name
+  from (
+    select distinct category_name
+    from seed_assets
+  ) seed
+  where not exists (
+    select 1
+    from public.asset_categories ac
+    where lower(trim(ac.name)) = lower(trim(seed.category_name))
+  )
+  returning id, name
+),
+resolved_categories as (
+  select id, name
+  from public.asset_categories
+),
+numbered_assets as (
+  select
+    *,
+    row_number() over (order by asset_no) as rn
+  from seed_assets
+)
+insert into public.assets (
+  asset_no,
+  asset_name,
+  type,
+  category_id,
+  unit,
+  department,
+  user_name,
+  year,
+  purchase_date,
+  price,
+  supplier,
+  source,
+  model,
+  serial_no,
+  processor,
+  ram_capacity,
+  hdd_capacity,
+  maintenance_enabled,
+  maintenance_strategy,
+  maintenance_priority,
+  service_interval_days,
+  last_service_date,
+  next_service_date,
+  warranty_expiry_date,
+  expected_lifespan_years,
+  replacement_target_date,
+  maintenance_notes
+)
+select
+  a.asset_no,
+  a.asset_name,
+  a.type,
+  c.id,
+  a.unit,
+  a.department,
+  p.full_name,
+  a.year::integer,
+  a.purchase_date::date,
+  a.price::numeric,
+  a.supplier,
+  a.source,
+  a.model,
+  a.serial_no,
+  a.processor,
+  a.ram_capacity,
+  a.hdd_capacity,
+  a.maintenance_enabled,
+  a.maintenance_strategy,
+  a.maintenance_priority,
+  a.service_interval_days,
+  a.last_service_date::date,
+  a.next_service_date::date,
+  nullif(a.warranty_expiry_date, '')::date,
+  a.expected_lifespan_years,
+  a.replacement_target_date::date,
+  a.maintenance_notes
+from numbered_assets a
+cross join profile_meta pm
+join resolved_categories c
+  on lower(trim(c.name)) = lower(trim(a.category_name))
+join selected_profiles p
+  on p.rn = (((a.rn - 1) % pm.total_profiles) + 1);
+
+-- Optional verification
+select
+  asset_no,
+  asset_name,
+  user_name,
+  type,
+  department,
+  next_service_date
+from public.assets
+where asset_no like 'AST-2026-%'
+order by asset_no;

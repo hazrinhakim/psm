@@ -21,6 +21,8 @@ import { Label } from '@/components/ui/label'
 import { normalizeRole, roleToPath } from '@/lib/roles'
 import { toast } from 'sonner'
 import { Spinner } from '@/components/ui/spinner'
+import { PasswordInput } from '@/components/ui/password-input'
+import { isStrongPassword, passwordPolicyHint } from '@/lib/passwordPolicy'
 
 export default function RegisterPage() {
   const [mode, setMode] = useState<'signup' | 'invite'>('signup')
@@ -96,8 +98,8 @@ export default function RegisterPage() {
     event.preventDefault()
     setError(null)
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.')
+    if (!isStrongPassword(password)) {
+      setError(passwordPolicyHint)
       return
     }
 
@@ -292,9 +294,8 @@ export default function RegisterPage() {
               >
                 Password
               </Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 placeholder="Create a password"
                 value={password}
                 onChange={event => setPassword(event.target.value)}
@@ -302,6 +303,9 @@ export default function RegisterPage() {
                 required
                 disabled={!ready}
               />
+              <p className="text-xs text-muted-foreground">
+                {passwordPolicyHint}
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -311,9 +315,8 @@ export default function RegisterPage() {
               >
                 Confirm password
               </Label>
-              <Input
+              <PasswordInput
                 id="confirm-password"
-                type="password"
                 placeholder="Repeat password"
                 value={confirmPassword}
                 onChange={event => setConfirmPassword(event.target.value)}

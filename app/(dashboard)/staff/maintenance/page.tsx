@@ -48,6 +48,13 @@ export default function StaffMaintenancePage() {
         maintenance_request_id: string
         progress_step: string
         note: string | null
+        work_summary: string | null
+        service_outcome: string | null
+        performed_at: string | null
+        estimated_downtime_hours: number | null
+        checklist_items:
+          | { id: string; label: string; checked: boolean }[]
+          | null
         created_at: string
       }[]
     >
@@ -105,6 +112,13 @@ export default function StaffMaintenancePage() {
       maintenance_request_id: string
       progress_step: string
       note: string | null
+      work_summary: string | null
+      service_outcome: string | null
+      performed_at: string | null
+      estimated_downtime_hours: number | null
+      checklist_items:
+        | { id: string; label: string; checked: boolean }[]
+        | null
       created_at: string
     }[] = []
 
@@ -112,7 +126,7 @@ export default function StaffMaintenancePage() {
       const { data: updateRows } = await supabase
         .from('maintenance_request_updates')
         .select(
-          'id, maintenance_request_id, progress_step, note, created_at'
+          'id, maintenance_request_id, progress_step, note, work_summary, service_outcome, performed_at, estimated_downtime_hours, checklist_items, created_at'
         )
         .in('maintenance_request_id', requestIds)
         .order('created_at', { ascending: true })
@@ -239,6 +253,13 @@ export default function StaffMaintenancePage() {
             maintenance_request_id: string
             progress_step: string
             note: string | null
+            work_summary: string | null
+            service_outcome: string | null
+            performed_at: string | null
+            estimated_downtime_hours: number | null
+            checklist_items:
+              | { id: string; label: string; checked: boolean }[]
+              | null
             created_at: string
           }
 
@@ -398,7 +419,7 @@ export default function StaffMaintenancePage() {
           </CardTitle>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="px-4 pb-5 sm:px-6 sm:pb-6">
           <form onSubmit={submitRequest} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="asset-select">Asset</Label>
@@ -468,7 +489,7 @@ export default function StaffMaintenancePage() {
             Follow every update as your request moves forward.
           </p>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 px-4 pb-5 sm:px-6 sm:pb-6">
           {loadingRequests ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Spinner className="h-4 w-4" />
@@ -535,8 +556,44 @@ export default function StaffMaintenancePage() {
                                 {update.note}
                               </p>
                             )}
+                            {update.work_summary && (
+                              <p className="mt-2 text-sm text-foreground">
+                                {update.work_summary}
+                              </p>
+                            )}
+                            {(update.service_outcome ||
+                              update.estimated_downtime_hours !== null) && (
+                              <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                {update.service_outcome && (
+                                  <span className="rounded-full border border-border/70 bg-background px-2.5 py-1">
+                                    Outcome:{' '}
+                                    {update.service_outcome.replace(/_/g, ' ')}
+                                  </span>
+                                )}
+                                {update.estimated_downtime_hours !== null && (
+                                  <span className="rounded-full border border-border/70 bg-background px-2.5 py-1">
+                                    Downtime: {update.estimated_downtime_hours} hour(s)
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            {update.checklist_items &&
+                              update.checklist_items.length > 0 && (
+                                <div className="mt-2 space-y-1 rounded-xl border border-border/70 bg-background/80 px-3 py-2">
+                                  <p className="text-xs font-medium text-foreground">
+                                    Completion checklist
+                                  </p>
+                                  <ul className="space-y-1 text-xs text-muted-foreground">
+                                    {update.checklist_items
+                                      .filter(item => item.checked)
+                                      .map(item => (
+                                        <li key={item.id}>• {item.label}</li>
+                                      ))}
+                                  </ul>
+                                </div>
+                              )}
                             <p className="mt-1 text-xs text-muted-foreground">
-                              {formatDateTime(update.created_at)}
+                              {formatDateTime(update.performed_at ?? update.created_at)}
                             </p>
                           </div>
                         </div>

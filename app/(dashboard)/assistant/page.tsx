@@ -119,7 +119,7 @@ export default async function AssistantDashboard() {
 
       <div className="grid gap-6 xl:grid-cols-[1.3fr_1fr]">
         <Card className="border-border/70 shadow-none">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardHeader className="flex flex-col gap-3 space-y-0 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="text-base font-semibold">
                 Recent Maintenance Requests
@@ -146,7 +146,7 @@ export default async function AssistantDashboard() {
                         : ''
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0 space-y-2">
                         <div className="flex items-center gap-3">
                           <div className="h-2.5 w-2.5 rounded-full bg-amber-500 shadow-[0_0_0_4px_rgba(245,158,11,0.14)]" />

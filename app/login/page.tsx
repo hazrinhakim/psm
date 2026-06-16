@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/ui/password-input'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -62,7 +63,7 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-5">
-      <div className="fixed right-20 top-5 z-30">
+      <div className="fixed right-4 top-4 z-30 sm:right-6 sm:top-5 lg:right-20">
         <ModeToggle />
       </div>
       <div className="pointer-events-none absolute inset-0">
@@ -136,9 +137,8 @@ export default function LoginPage() {
                   </Label>
                   <div className="relative">
                     <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
+                    <PasswordInput
                       id="password"
-                      type="password"
                       placeholder="Enter your password"
                       value={password}
                       onChange={e => setPassword(e.target.value)}
@@ -172,7 +172,7 @@ export default function LoginPage() {
             </CardContent>
 
             <CardFooter className="border-t border-border/70 pt-5">
-              <div className="flex w-full items-center justify-between gap-3 text-xs text-muted-foreground">
+              <div className="flex w-full flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <span>Integrated Computerized Asset Management System</span>
                 <span className="font-medium text-foreground">
                   Negeri Perak Darul Ridzuan

@@ -111,6 +111,51 @@ export async function deleteUser(formData: FormData) {
     redirect('/admin/users?error=missing_service_role_key')
   }
 
+  const { data: profileData } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', userId)
+    .maybeSingle()
+
+  const fullName = profileData?.full_name?.trim() || null
+
+  if (fullName) {
+    const { data: assignedAssets, error: assignedAssetsError } = await supabase
+      .from('assets')
+      .select('id')
+      .eq('user_name', fullName)
+
+    if (assignedAssetsError) {
+      redirect(`/admin/users?error=${encodeURIComponent(assignedAssetsError.message)}`)
+    }
+
+    const assetIds = (assignedAssets ?? []).map(asset => asset.id)
+
+    if (assetIds.length > 0) {
+      const { error: historyError } = await supabase
+        .from('asset_assignment_history')
+        .update({
+          unassigned_at: new Date().toISOString(),
+          ended_reason: 'user_deleted',
+        })
+        .in('asset_id', assetIds)
+        .is('unassigned_at', null)
+
+      if (historyError) {
+        redirect(`/admin/users?error=${encodeURIComponent(historyError.message)}`)
+      }
+
+      const { error: unassignError } = await supabase
+        .from('assets')
+        .update({ user_name: null })
+        .eq('user_name', fullName)
+
+      if (unassignError) {
+        redirect(`/admin/users?error=${encodeURIComponent(unassignError.message)}`)
+      }
+    }
+  }
+
   const { error } = await supabase.auth.admin.deleteUser(userId)
 
   if (error) {

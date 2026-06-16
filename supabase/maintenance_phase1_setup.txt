@@ -1,0 +1,420 @@
+ICAMS Maintenance Module Enhancement - Phase 1 Database Setup
+============================================================
+
+Purpose
+-------
+This SQL prepares the database for the first maintenance enhancement phase:
+
+1. Preventive maintenance scheduling
+2. Due / overdue asset servicing
+3. Richer maintenance request metadata
+4. Reminder and automation log support
+
+Notes
+-----
+- This script is additive. It should not break the current maintenance flow.
+- Existing tables used by the app today remain valid:
+  - public.assets
+  - public.maintenance_requests
+  - public.maintenance_request_updates
+  - public.notifications
+- No RLS policy changes are included yet. We can add them once the new UI flow is implemented.
+- Run this in Supabase SQL Editor.
+
+SQL
+---
+
+create extension if not exists pgcrypto;
+
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = timezone('utc', now());
+  return new;
+end;
+$$;
+
+alter table public.assets
+  add column if not exists maintenance_enabled boolean not null default true,
+  add column if not exists maintenance_strategy text not null default 'corrective',
+  add column if not exists maintenance_priority text not null default 'medium',
+  add column if not exists service_interval_days integer,
+  add column if not exists last_service_date date,
+  add column if not exists next_service_date date,
+  add column if not exists warranty_expiry_date date,
+  add column if not exists expected_lifespan_years integer,
+  add column if not exists replacement_target_date date,
+  add column if not exists maintenance_notes text;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'assets_maintenance_strategy_check'
+  ) then
+    alter table public.assets
+      add constraint assets_maintenance_strategy_check
+      check (maintenance_strategy in ('corrective', 'preventive', 'hybrid'));
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'assets_maintenance_priority_check'
+  ) then
+    alter table public.assets
+      add constraint assets_maintenance_priority_check
+      check (maintenance_priority in ('low', 'medium', 'high', 'critical'));
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'assets_service_interval_days_check'
+  ) then
+    alter table public.assets
+      add constraint assets_service_interval_days_check
+      check (service_interval_days is null or service_interval_days > 0);
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'assets_expected_lifespan_years_check'
+  ) then
+    alter table public.assets
+      add constraint assets_expected_lifespan_years_check
+      check (expected_lifespan_years is null or expected_lifespan_years > 0);
+  end if;
+end
+$$;
+
+alter table public.maintenance_requests
+  add column if not exists request_type text,
+  add column if not exists priority text,
+  add column if not exists source text,
+  add column if not exists scheduled_date date,
+  add column if not exists due_date date,
+  add column if not exists assigned_to uuid references public.profiles(id) on delete set null,
+  add column if not exists resolved_at timestamptz,
+  add column if not exists resolution_summary text,
+  add column if not exists estimated_cost numeric(12,2),
+  add column if not exists actual_cost numeric(12,2),
+  add column if not exists schedule_id uuid;
+
+update public.maintenance_requests
+set
+  request_type = coalesce(request_type, 'corrective'),
+  priority = coalesce(priority, 'medium'),
+  source = coalesce(source, 'manual')
+where
+  request_type is null
+  or priority is null
+  or source is null;
+
+alter table public.maintenance_requests
+  alter column request_type set default 'corrective',
+  alter column priority set default 'medium',
+  alter column source set default 'manual';
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'maintenance_requests_request_type_check'
+  ) then
+    alter table public.maintenance_requests
+      add constraint maintenance_requests_request_type_check
+      check (request_type in ('corrective', 'preventive', 'inspection'));
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'maintenance_requests_priority_check'
+  ) then
+    alter table public.maintenance_requests
+      add constraint maintenance_requests_priority_check
+      check (priority in ('low', 'medium', 'high', 'critical'));
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'maintenance_requests_source_check'
+  ) then
+    alter table public.maintenance_requests
+      add constraint maintenance_requests_source_check
+      check (source in ('manual', 'scheduled', 'system'));
+  end if;
+end
+$$;
+
+create table if not exists public.maintenance_schedules (
+  id uuid primary key default gen_random_uuid(),
+  asset_id uuid not null references public.assets(id) on delete cascade,
+  title text not null,
+  description text,
+  maintenance_type text not null default 'preventive',
+  priority text not null default 'medium',
+  interval_days integer not null,
+  reminder_days_before integer not null default 7,
+  last_service_date date,
+  next_due_date date not null,
+  auto_create_request boolean not null default false,
+  assigned_to uuid references public.profiles(id) on delete set null,
+  is_active boolean not null default true,
+  notes text,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'maintenance_schedules_maintenance_type_check'
+  ) then
+    alter table public.maintenance_schedules
+      add constraint maintenance_schedules_maintenance_type_check
+      check (maintenance_type in ('preventive', 'inspection', 'calibration'));
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'maintenance_schedules_priority_check'
+  ) then
+    alter table public.maintenance_schedules
+      add constraint maintenance_schedules_priority_check
+      check (priority in ('low', 'medium', 'high', 'critical'));
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'maintenance_schedules_interval_days_check'
+  ) then
+    alter table public.maintenance_schedules
+      add constraint maintenance_schedules_interval_days_check
+      check (interval_days > 0);
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'maintenance_schedules_reminder_days_before_check'
+  ) then
+    alter table public.maintenance_schedules
+      add constraint maintenance_schedules_reminder_days_before_check
+      check (reminder_days_before >= 0);
+  end if;
+end
+$$;
+
+create table if not exists public.maintenance_schedule_logs (
+  id uuid primary key default gen_random_uuid(),
+  schedule_id uuid not null references public.maintenance_schedules(id) on delete cascade,
+  asset_id uuid not null references public.assets(id) on delete cascade,
+  maintenance_request_id uuid references public.maintenance_requests(id) on delete set null,
+  action_type text not null,
+  action_date date not null,
+  message text,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'maintenance_schedule_logs_action_type_check'
+  ) then
+    alter table public.maintenance_schedule_logs
+      add constraint maintenance_schedule_logs_action_type_check
+      check (action_type in ('reminder_sent', 'request_created', 'service_completed', 'schedule_skipped'));
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'notifications'
+      and column_name = 'related_entity_type'
+  ) then
+    alter table public.notifications
+      add column related_entity_type text;
+  end if;
+
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'notifications'
+      and column_name = 'related_entity_id'
+  ) then
+    alter table public.notifications
+      add column related_entity_id uuid;
+  end if;
+
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'notifications'
+      and column_name = 'scheduled_for'
+  ) then
+    alter table public.notifications
+      add column scheduled_for timestamptz;
+  end if;
+
+  if not exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'notifications'
+      and column_name = 'sent_at'
+  ) then
+    alter table public.notifications
+      add column sent_at timestamptz;
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'notifications_related_entity_type_check'
+  ) then
+    alter table public.notifications
+      add constraint notifications_related_entity_type_check
+      check (
+        related_entity_type is null
+        or related_entity_type in ('asset', 'maintenance_request', 'maintenance_schedule')
+      );
+  end if;
+end
+$$;
+
+create index if not exists idx_assets_next_service_date
+  on public.assets (next_service_date);
+
+create index if not exists idx_assets_maintenance_enabled
+  on public.assets (maintenance_enabled, maintenance_strategy);
+
+create index if not exists idx_maintenance_requests_asset_status
+  on public.maintenance_requests (asset_id, status);
+
+create index if not exists idx_maintenance_requests_due_date
+  on public.maintenance_requests (due_date);
+
+create index if not exists idx_maintenance_requests_schedule_id
+  on public.maintenance_requests (schedule_id);
+
+create index if not exists idx_maintenance_schedules_asset_id
+  on public.maintenance_schedules (asset_id);
+
+create index if not exists idx_maintenance_schedules_next_due_date
+  on public.maintenance_schedules (next_due_date)
+  where is_active = true;
+
+create unique index if not exists idx_maintenance_schedule_logs_unique_action
+  on public.maintenance_schedule_logs (schedule_id, action_type, action_date);
+
+drop trigger if exists trg_maintenance_schedules_set_updated_at on public.maintenance_schedules;
+create trigger trg_maintenance_schedules_set_updated_at
+before update on public.maintenance_schedules
+for each row
+execute function public.set_updated_at();
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'maintenance_requests_schedule_id_fkey'
+  ) then
+    alter table public.maintenance_requests
+      add constraint maintenance_requests_schedule_id_fkey
+      foreign key (schedule_id)
+      references public.maintenance_schedules(id)
+      on delete set null;
+  end if;
+end
+$$;
+
+create or replace view public.v_assets_due_for_maintenance as
+select
+  a.id as asset_id,
+  a.asset_no,
+  a.asset_name,
+  a.user_name,
+  a.department,
+  a.unit,
+  a.maintenance_enabled,
+  a.maintenance_strategy,
+  a.maintenance_priority,
+  a.last_service_date,
+  a.next_service_date,
+  case
+    when a.next_service_date is null then null
+    when a.next_service_date < current_date then 'overdue'
+    when a.next_service_date <= current_date + 7 then 'due_soon'
+    else 'scheduled'
+  end as service_state,
+  case
+    when a.next_service_date is null then null
+    else (a.next_service_date - current_date)
+  end as days_until_service
+from public.assets a
+where a.maintenance_enabled = true
+  and a.next_service_date is not null;
+
+create or replace view public.v_maintenance_schedule_dashboard as
+select
+  ms.id,
+  ms.asset_id,
+  a.asset_no,
+  a.asset_name,
+  ms.title,
+  ms.maintenance_type,
+  ms.priority,
+  ms.interval_days,
+  ms.last_service_date,
+  ms.next_due_date,
+  ms.reminder_days_before,
+  ms.auto_create_request,
+  ms.is_active,
+  case
+    when ms.next_due_date < current_date then 'overdue'
+    when ms.next_due_date <= current_date + ms.reminder_days_before then 'due_soon'
+    else 'scheduled'
+  end as schedule_state,
+  (ms.next_due_date - current_date) as days_until_due
+from public.maintenance_schedules ms
+join public.assets a on a.id = ms.asset_id
+where ms.is_active = true;
+
+comment on table public.maintenance_schedules is
+'Recurring preventive or inspection schedule for an asset.';
+
+comment on table public.maintenance_schedule_logs is
+'Automation and reminder log for preventive maintenance schedules.';
+
+comment on view public.v_assets_due_for_maintenance is
+'Quick view for assets with next service dates to power due and overdue dashboards.';
+
+comment on view public.v_maintenance_schedule_dashboard is
+'Quick view for preventive maintenance schedule monitoring.';

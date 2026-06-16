@@ -1,3 +1,4 @@
+import { FloatingAiAssistant } from '@/components/dashboard/FloatingAiAssistant'
 import { Sidebar } from '@/components/dashboard/Sidebar'
 import { SiteHeader } from '@/components/dashboard/SiteHeader'
 import { PageTransition } from '@/components/ui/page-transition'
@@ -40,6 +41,7 @@ export default async function AdminLayout({
           </main>
         </div>
       </SidebarInset>
+      <FloatingAiAssistant />
     </SidebarProvider>
   )
 }

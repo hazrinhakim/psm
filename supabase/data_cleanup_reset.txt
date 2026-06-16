@@ -1,0 +1,187 @@
+ICAMS Data Cleanup Reset
+========================
+
+Purpose
+-------
+This SQL resets old operational data so the system can be re-populated
+manually with only currently registered users and newly assigned assets.
+
+Recommended use case:
+1. Keep the current schema, constraints, views, and maintenance setup
+2. Keep valid registered users in `auth.users` and `public.profiles`
+3. Remove old imported operational data from the previous company dataset
+4. Re-enter assets and assignments manually for the new scoped rollout
+
+What this script will do
+------------------------
+- Delete old asset records
+- Delete old maintenance requests, updates, schedules, and schedule logs
+- Delete old notifications
+- Delete feedback records
+- Keep reference/master tables such as:
+  - `public.asset_categories`
+  - current table structure
+  - maintenance enhancement columns/views/functions
+- Keep current registered users by default
+
+Important
+---------
+- Run this in Supabase SQL Editor
+- Read the preview queries first
+- Take a backup/export before running the delete section
+- This script does NOT delete `auth.users`
+- This script does NOT drop tables or recreate schema
+
+SQL
+---
+
+-- =========================================================
+-- 1. Preview current counts before cleanup
+-- =========================================================
+
+select 'profiles' as table_name, count(*) as row_count from public.profiles
+union all
+select 'asset_categories', count(*) from public.asset_categories
+union all
+select 'assets', count(*) from public.assets
+union all
+select 'maintenance_schedules', count(*) from public.maintenance_schedules
+union all
+select 'maintenance_schedule_logs', count(*) from public.maintenance_schedule_logs
+union all
+select 'maintenance_requests', count(*) from public.maintenance_requests
+union all
+select 'maintenance_request_updates', count(*) from public.maintenance_request_updates
+union all
+select 'notifications', count(*) from public.notifications
+union all
+select 'feedback', count(*) from public.feedback
+order by table_name;
+
+-- Preview assets assigned to names that do not match any registered profile.
+select
+  a.id,
+  a.asset_no,
+  a.asset_name,
+  a.user_name
+from public.assets a
+left join public.profiles p
+  on lower(trim(coalesce(p.full_name, ''))) = lower(trim(coalesce(a.user_name, '')))
+where coalesce(trim(a.user_name), '') <> ''
+  and p.id is null
+order by a.user_name, a.asset_no;
+
+-- Preview orphan profiles that no longer have a matching auth account.
+select
+  p.id,
+  p.full_name,
+  p.role
+from public.profiles p
+left join auth.users u
+  on u.id = p.id
+where u.id is null
+order by p.full_name nulls last, p.id;
+
+-- =========================================================
+-- 2. Optional backup helpers
+-- =========================================================
+
+-- Suggested backup/export targets before cleanup:
+-- - public.assets
+-- - public.maintenance_requests
+-- - public.maintenance_request_updates
+-- - public.maintenance_schedules
+-- - public.maintenance_schedule_logs
+-- - public.notifications
+-- - public.feedback
+--
+-- In Supabase Studio, export each table to CSV if you want a safety copy.
+
+-- =========================================================
+-- 3. Main cleanup
+-- =========================================================
+
+begin;
+
+-- Remove child records first
+delete from public.maintenance_request_updates;
+delete from public.maintenance_schedule_logs;
+delete from public.notifications;
+delete from public.feedback;
+
+-- Remove maintenance parent records
+delete from public.maintenance_requests;
+delete from public.maintenance_schedules;
+
+-- Remove old imported assets and their legacy assignments
+delete from public.assets;
+
+commit;
+
+-- =========================================================
+-- 4. Optional profile cleanup
+-- =========================================================
+
+-- By default, current registered users are kept.
+-- If you want to remove old `profiles` rows that do not have a real auth account,
+-- review the preview query above first, then run this block manually.
+
+-- begin;
+-- delete from public.profiles p
+-- where not exists (
+--   select 1
+--   from auth.users u
+--   where u.id = p.id
+-- );
+-- commit;
+
+-- If you want to keep only a very small approved user set,
+-- replace the UUID list below with the real user IDs you want to keep.
+-- Use this only after careful review.
+
+-- begin;
+-- delete from public.profiles
+-- where id not in (
+--   '00000000-0000-0000-0000-000000000000',
+--   '11111111-1111-1111-1111-111111111111'
+-- );
+-- commit;
+
+-- =========================================================
+-- 5. Verification after cleanup
+-- =========================================================
+
+select 'profiles' as table_name, count(*) as row_count from public.profiles
+union all
+select 'asset_categories', count(*) from public.asset_categories
+union all
+select 'assets', count(*) from public.assets
+union all
+select 'maintenance_schedules', count(*) from public.maintenance_schedules
+union all
+select 'maintenance_schedule_logs', count(*) from public.maintenance_schedule_logs
+union all
+select 'maintenance_requests', count(*) from public.maintenance_requests
+union all
+select 'maintenance_request_updates', count(*) from public.maintenance_request_updates
+union all
+select 'notifications', count(*) from public.notifications
+union all
+select 'feedback', count(*) from public.feedback
+order by table_name;
+
+-- =========================================================
+-- 6. Suggested next steps after cleanup
+-- =========================================================
+
+-- 1. Confirm the correct users exist in:
+--    - auth.users
+--    - public.profiles
+--
+-- 2. Recreate asset data manually using the current ICAMS forms
+--    so `assets.user_name` only matches `public.profiles.full_name`
+--
+-- 3. Recreate preventive maintenance setup from the asset register form
+--    or update asset form, if needed
+--
+-- 4. Submit a few sample maintenance requests to validate the new flow

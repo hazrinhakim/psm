@@ -147,7 +147,7 @@ export function AssetStatusOverview({
 
   return (
     <Card className="border-border/70 shadow-none">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+      <CardHeader className="flex flex-col gap-2 space-y-0 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <CardTitle className="text-base font-semibold">
             Asset Status Overview
@@ -163,7 +163,7 @@ export function AssetStatusOverview({
             <div className="pointer-events-none absolute inset-x-6 top-4 h-28 rounded-full bg-emerald-500/10 blur-3xl" />
             <ChartContainer
               config={chartConfig}
-              className="mx-auto aspect-square h-[300px] sm:h-[340px]"
+              className="mx-auto aspect-square h-[250px] sm:h-[300px] lg:h-[340px]"
             >
               <PieChart>
                 <ChartTooltip

@@ -56,6 +56,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 
 type ReportsDashboardProps = {
@@ -205,6 +206,21 @@ export function ReportsDashboard({
           </CardContent>
         </Card>
       ) : null}
+
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl border border-border/70 bg-muted/30 p-1 sm:flex sm:flex-wrap sm:justify-start">
+          <TabsTrigger value="overview" className="w-full">
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="risk" className="w-full">
+            AI Risk
+          </TabsTrigger>
+          <TabsTrigger value="breakdown" className="w-full">
+            Breakdown
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6">
 
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
         <Card className="min-w-0 border-border/70 shadow-none">
@@ -361,14 +377,18 @@ export function ReportsDashboard({
         </Card>
       </div>
 
+        </TabsContent>
+
+        <TabsContent value="risk" className="space-y-6">
+
       <Card className="min-w-0 border-border/70 shadow-none">
         <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-1.5">
             <CardTitle className="flex items-center gap-2 text-base font-semibold">
-              Predictions & Recommendations
+              AI Maintenance Recommendations
             </CardTitle>
             <CardDescription>
-              Forward-looking asset risk scoring based on age and maintenance history
+              Rule-based maintenance intelligence built from asset age, service profile, due dates, and maintenance activity
             </CardDescription>
           </div>
           <div className="max-w-full rounded-full border border-blue-200/90 bg-blue-100/60 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/12 dark:text-blue-200">
@@ -376,7 +396,7 @@ export function ReportsDashboard({
           </div>
         </CardHeader>
         <CardContent className={cn('space-y-6', loading && 'opacity-60')}>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <InsightStatCard
               label="High Risk Assets"
               value={report.insights.summary.highRiskAssets}
@@ -384,21 +404,27 @@ export function ReportsDashboard({
               tone="red"
             />
             <InsightStatCard
-              label="Medium Risk Assets"
-              value={report.insights.summary.mediumRiskAssets}
-              helper="Preventive action recommended"
+              label="Overdue Attention"
+              value={report.insights.summary.overdueAttentionAssets}
+              helper="Assets needing urgent service action"
               tone="amber"
+            />
+            <InsightStatCard
+              label="Preventive Coverage"
+              value={`${report.insights.summary.preventiveCoveragePercent}%`}
+              helper="Assets with maintenance setup enabled"
+              tone="emerald"
             />
             <InsightStatCard
               label="Predicted Maintenance"
               value={report.insights.summary.predictedMaintenanceNext90Days}
-              helper="Estimated cases in 90 days"
+              helper="Estimated cases in next 90 days"
               tone="blue"
             />
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-            <div className="min-w-0 rounded-3xl border border-border/70 bg-card p-5">
+            <div className="min-w-0 rounded-3xl border border-border/70 bg-card p-4 sm:p-5">
               <div className="space-y-1">
                 <h3 className="text-sm font-semibold text-foreground">
                   Recommended actions
@@ -419,6 +445,14 @@ export function ReportsDashboard({
                         <p className="mt-1 text-sm leading-6 text-muted-foreground">
                           {item.detail}
                         </p>
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                          <span className="rounded-full border border-border/60 bg-muted/30 px-2.5 py-1 text-muted-foreground">
+                            Owner: {item.owner}
+                          </span>
+                          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-emerald-700">
+                            Confidence: {item.confidence}
+                          </span>
+                        </div>
                       </div>
                       <span
                         className="w-fit rounded-full border border-blue-200/90 bg-blue-100/60 px-2.5 py-0.5 text-[11px] font-medium leading-5 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/12 dark:text-blue-200"
@@ -432,23 +466,118 @@ export function ReportsDashboard({
             </div>
 
             <div className="min-w-0 space-y-4">
-              <div className="rounded-3xl border border-border/70 bg-card p-5">
+              <div className="rounded-3xl border border-border/70 bg-card p-4 sm:p-5">
                 <h3 className="text-sm font-semibold text-foreground">
                   Risk overview
                 </h3>
                 <div className="mt-4 grid gap-3">
                   <MiniInsightRow
+                    label="Maintenance Focus Area"
+                    value={report.insights.trends.maintenanceFocusArea}
+                  />
+                  <MiniInsightRow
                     label="Highest Risk Category"
                     value={report.insights.trends.highestRiskCategory}
                   />
                   <MiniInsightRow
-                    label="Recent Maintenance Load"
-                    value={`${report.insights.trends.recentMaintenanceLoad} cases`}
+                    label="Highest Risk Type"
+                    value={report.insights.trends.highestRiskType}
+                  />
+                  <MiniInsightRow
+                    label="Open Maintenance Cases"
+                    value={`${report.insights.summary.openMaintenanceCases} cases`}
+                  />
+                  <MiniInsightRow
+                    label="Unresolved Rate"
+                    value={`${report.insights.trends.unresolvedRate}%`}
+                  />
+                  <MiniInsightRow
+                    label="Replacement Exposure"
+                    value={formatCurrencyCompact(
+                      report.insights.trends.replacementExposure
+                    )}
                   />
                 </div>
               </div>
 
-              <div className="rounded-3xl border border-border/70 bg-card p-5">
+              <div className="rounded-3xl border border-border/70 bg-card p-4 sm:p-5">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Risk distribution
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Asset count grouped by current risk band
+                  </p>
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <MiniInsightRow
+                    label="Low"
+                    value={String(report.insights.riskDistribution.low)}
+                  />
+                  <MiniInsightRow
+                    label="Medium"
+                    value={String(report.insights.riskDistribution.medium)}
+                  />
+                  <MiniInsightRow
+                    label="High"
+                    value={String(report.insights.riskDistribution.high)}
+                  />
+                  <MiniInsightRow
+                    label="Critical"
+                    value={String(report.insights.riskDistribution.critical)}
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-border/70 bg-card p-4 sm:p-5">
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Maintenance pressure
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Categories carrying the heaviest open-case and risk load
+                    </p>
+                  </div>
+
+                  {report.insights.maintenancePressure.length === 0 ? (
+                    <div className="mt-4 rounded-2xl border border-dashed border-border/70 p-5 text-sm text-muted-foreground">
+                      No maintenance pressure cluster detected for the current filters.
+                    </div>
+                  ) : (
+                    report.insights.maintenancePressure.map(item => (
+                      <div
+                        key={item.label}
+                        className="rounded-2xl border border-border/60 bg-muted/[0.14] p-4"
+                      >
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0 space-y-1">
+                            <p className="break-words font-medium text-foreground">
+                              {item.label}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {item.assetCount} assets inside current pressure cluster
+                            </p>
+                          </div>
+                          <div className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                            Avg risk {item.averageRiskScore}
+                          </div>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          <span className="rounded-full border border-border/60 bg-background px-2.5 py-1">
+                            {item.openCases} open cases
+                          </span>
+                          <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-blue-700">
+                            {item.dueSoonCount} due soon
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-border/70 bg-card p-4 sm:p-5">
                 <div className="space-y-3">
                   <div className="space-y-1">
                     <h3 className="text-sm font-semibold text-foreground">
@@ -487,11 +616,22 @@ export function ReportsDashboard({
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
                           <span className="rounded-full border border-border/60 bg-background px-2.5 py-1">
+                            {asset.maintenanceMode}
+                          </span>
+                          <span className="rounded-full border border-border/60 bg-background px-2.5 py-1">
                             Age {asset.ageYears} yrs
                           </span>
                           <span className="rounded-full border border-border/60 bg-background px-2.5 py-1">
                             {asset.maintenanceCount} maintenance cases
                           </span>
+                          <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-amber-700">
+                            {asset.openCases} open cases
+                          </span>
+                          {asset.nextServiceDate ? (
+                            <span className="rounded-full border border-border/60 bg-background px-2.5 py-1">
+                              Next service {formatDateCompact(asset.nextServiceDate)}
+                            </span>
+                          ) : null}
                           <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-blue-700">
                             {asset.suggestedAction}
                           </span>
@@ -505,6 +645,10 @@ export function ReportsDashboard({
           </div>
         </CardContent>
       </Card>
+
+        </TabsContent>
+
+        <TabsContent value="breakdown" className="space-y-6">
 
       <Card className="min-w-0 border-border/70 shadow-none">
         <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -632,6 +776,8 @@ export function ReportsDashboard({
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
@@ -718,7 +864,7 @@ function InsightStatCard({
   tone: 'red' | 'amber' | 'blue' | 'emerald'
 }) {
   const accentClass = cn(
-    'inline-flex h-10 w-10 items-center justify-center rounded-xl border text-sm font-semibold',
+    'flex shrink-0 items-center justify-center self-start overflow-hidden rounded-full border',
     tone === 'red' &&
       'border-rose-200/70 bg-rose-100/50 text-rose-600 dark:border-rose-500/15 dark:bg-rose-500/12 dark:text-rose-300',
     tone === 'amber' &&
@@ -742,7 +888,7 @@ function InsightStatCard({
     <Card className="border-border/70 shadow-none">
       <CardContent className="pt-4">
         <div className="flex items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <div className="text-3xl font-semibold tracking-tight text-foreground">
               {value}
             </div>
@@ -751,8 +897,17 @@ function InsightStatCard({
             </p>
             <p className="mt-1 text-xs text-muted-foreground">{helper}</p>
           </div>
-          <div className={accentClass}>
-            <AccentIcon className="h-5 w-5" />
+          <div
+            className={accentClass}
+            style={{
+              width: 44,
+              height: 44,
+              minWidth: 44,
+              minHeight: 44,
+              borderRadius: 9999,
+            }}
+          >
+            <AccentIcon className="block h-5 w-5" />
           </div>
         </div>
       </CardContent>
@@ -769,6 +924,32 @@ function MiniInsightRow({ label, value }: { label: string; value: string }) {
       <p className="mt-2 text-sm font-medium text-foreground">{value}</p>
     </div>
   )
+}
+
+function formatCurrencyCompact(value: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return 'RM0'
+  }
+
+  return new Intl.NumberFormat('en-MY', {
+    style: 'currency',
+    currency: 'MYR',
+    notation: value >= 10000 ? 'compact' : 'standard',
+    maximumFractionDigits: value >= 10000 ? 1 : 0,
+  }).format(value)
+}
+
+function formatDateCompact(value: string) {
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    return value
+  }
+
+  return parsed.toLocaleDateString('en-MY', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
 }
 
 function toggleValue(values: string[], nextValue: string) {

@@ -34,10 +34,10 @@ export function AssetSearchForm({ basePath, query }: AssetSearchFormProps) {
           className="h-11 rounded-full pl-11 pr-4"
         />
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <Button
           type="submit"
-          className="h-11 gap-2 rounded-full px-8 group"
+          className="h-11 w-full gap-2 rounded-full px-8 group sm:w-auto"
           disabled={pending || isClearing}
         >
           {pending ? <Spinner /> : <Search className="h-4 w-4 transition-transform group-hover:scale-110" />}
@@ -45,7 +45,7 @@ export function AssetSearchForm({ basePath, query }: AssetSearchFormProps) {
         </Button>
         <Button
           variant="outline"
-          className="h-11 rounded-full px-8"
+          className="h-11 w-full rounded-full px-8 sm:w-auto"
           type="button"
           disabled={pending || isClearing}
           onClick={() => {

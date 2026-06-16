@@ -65,16 +65,38 @@ export type CustomAssetReportResponse = {
       highRiskAssets: number
       mediumRiskAssets: number
       predictedMaintenanceNext90Days: number
+      openMaintenanceCases: number
+      overdueAttentionAssets: number
+      preventiveCoveragePercent: number
+      averageRiskScore: number
     }
     trends: {
       highestRiskType: string
       highestRiskCategory: string
       recentMaintenanceLoad: number
+      unresolvedRate: number
+      replacementExposure: number
+      maintenanceFocusArea: string
     }
     recommendations: Array<{
       title: string
       detail: string
       priority: 'High' | 'Medium' | 'Low'
+      owner: string
+      confidence: 'High' | 'Medium' | 'Low'
+    }>
+    riskDistribution: {
+      low: number
+      medium: number
+      high: number
+      critical: number
+    }
+    maintenancePressure: Array<{
+      label: string
+      assetCount: number
+      averageRiskScore: number
+      openCases: number
+      dueSoonCount: number
     }>
     highRiskAssets: Array<{
       id: string
@@ -85,7 +107,10 @@ export type CustomAssetReportResponse = {
       ageYears: number
       riskScore: number
       maintenanceCount: number
+      openCases: number
       lastMaintenanceAt: string | null
+      nextServiceDate: string | null
+      maintenanceMode: string
       suggestedAction: string
     }>
   }
@@ -102,6 +127,9 @@ type AssetRow = {
   purchase_date?: string | null
   created_at?: string | null
   price?: number | string | null
+  maintenance_enabled?: boolean | null
+  maintenance_strategy?: string | null
+  next_service_date?: string | null
   asset_categories?:
     | {
         name?: string | null
@@ -244,6 +272,9 @@ export async function buildCustomAssetReport(
       purchase_date,
       created_at,
       price,
+      maintenance_enabled,
+      maintenance_strategy,
+      next_service_date,
       asset_categories ( name )
     `)
 
@@ -343,23 +374,21 @@ export async function buildCustomAssetReport(
         tone: 'blue',
       },
       {
-        label: 'Asset Types',
-        value: totalTypes,
-        description: 'Matching type groups',
+        label: 'Preventive Coverage',
+        value: Math.round(insights.summary.preventiveCoveragePercent),
+        description: 'Assets with maintenance profile enabled (%)',
         tone: 'emerald',
       },
       {
-        label: 'Categories',
-        value: totalCategories,
-        description: 'Matching category groups',
+        label: 'Open Cases',
+        value: insights.summary.openMaintenanceCases,
+        description: 'Active unresolved maintenance requests',
         tone: 'amber',
       },
       {
-        label: 'Average / Bucket',
-        value: Math.round(
-          timelineEntries.length > 0 ? totalAssets / timelineEntries.length : 0
-        ),
-        description: 'Average assets per timeline bucket',
+        label: 'Overdue Attention',
+        value: insights.summary.overdueAttentionAssets,
+        description: 'Assets needing immediate action',
         tone: 'sky',
       },
     ],
@@ -563,6 +592,10 @@ export async function buildCustomAssetReportExcel(
   const forecastRows: Array<[string, string | number]> = [
     ['High Risk Assets', report.insights.summary.highRiskAssets],
     ['Medium Risk Assets', report.insights.summary.mediumRiskAssets],
+    ['Open Maintenance Cases', report.insights.summary.openMaintenanceCases],
+    ['Overdue Attention Assets', report.insights.summary.overdueAttentionAssets],
+    ['Preventive Coverage', `${report.insights.summary.preventiveCoveragePercent}%`],
+    ['Average Risk Score', report.insights.summary.averageRiskScore],
     [
       'Predicted Maintenance (90 days)',
       report.insights.summary.predictedMaintenanceNext90Days,
@@ -570,6 +603,8 @@ export async function buildCustomAssetReportExcel(
     ['Highest Risk Type', report.insights.trends.highestRiskType],
     ['Highest Risk Category', report.insights.trends.highestRiskCategory],
     ['Recent Maintenance Load', `${report.insights.trends.recentMaintenanceLoad} cases`],
+    ['Unresolved Rate', `${report.insights.trends.unresolvedRate}%`],
+    ['Maintenance Focus Area', report.insights.trends.maintenanceFocusArea],
   ]
 
   for (const [index, [label, value]] of forecastRows.entries()) {
@@ -604,9 +639,15 @@ export async function buildCustomAssetReportExcel(
     row.getCell(2).font = { color: { argb: 'FF334155' } }
     row.getCell(3).value = item.priority.toUpperCase()
     row.getCell(3).font = { bold: true, color: { argb: 'FF1D4ED8' } }
+    row.getCell(4).value = item.owner
+    row.getCell(4).font = { color: { argb: 'FF334155' } }
+    row.getCell(5).value = item.confidence
+    row.getCell(5).font = { bold: true, color: { argb: 'FF0F766E' } }
     row.getCell(1).border = createExcelBorder()
     row.getCell(2).border = createExcelBorder()
     row.getCell(3).border = createExcelBorder()
+    row.getCell(4).border = createExcelBorder()
+    row.getCell(5).border = createExcelBorder()
   })
 
   let currentRow = recommendationsTitleRow + report.insights.recommendations.length + 3
@@ -681,13 +722,16 @@ export async function buildCustomAssetReportExcel(
     { header: 'Asset Name', key: 'assetName', width: 30 },
     { header: 'Type', key: 'type', width: 20 },
     { header: 'Category', key: 'category', width: 24 },
+    { header: 'Mode', key: 'maintenanceMode', width: 16 },
     { header: 'Age (Years)', key: 'ageYears', width: 14 },
     { header: 'Risk Score', key: 'riskScore', width: 14 },
     { header: 'Maintenance Cases', key: 'maintenanceCount', width: 18 },
+    { header: 'Open Cases', key: 'openCases', width: 14 },
+    { header: 'Next Service', key: 'nextServiceDate', width: 18 },
     { header: 'Last Maintenance', key: 'lastMaintenanceAt', width: 22 },
     { header: 'Suggested Action', key: 'suggestedAction', width: 24 },
   ]
-  riskSheet.autoFilter = 'A1:I1'
+  riskSheet.autoFilter = 'A1:K1'
 
   styleExcelHeaderRow(riskSheet.getRow(1))
 
@@ -697,9 +741,14 @@ export async function buildCustomAssetReportExcel(
       assetName: item.assetName,
       type: item.type,
       category: item.category,
+      maintenanceMode: item.maintenanceMode,
       ageYears: item.ageYears,
       riskScore: item.riskScore,
       maintenanceCount: item.maintenanceCount,
+      openCases: item.openCases,
+      nextServiceDate: item.nextServiceDate
+        ? new Date(item.nextServiceDate).toLocaleDateString('en-US')
+        : 'N/A',
       lastMaintenanceAt: item.lastMaintenanceAt
         ? new Date(item.lastMaintenanceAt).toLocaleDateString('en-US')
         : 'N/A',
@@ -837,6 +886,7 @@ type MaintenanceRequestRow = {
   asset_id?: string | null
   status?: string | null
   created_at?: string | null
+  due_date?: string | null
 }
 
 async function buildAssetForecastInsights(
@@ -849,20 +899,36 @@ async function buildAssetForecastInsights(
         highRiskAssets: 0,
         mediumRiskAssets: 0,
         predictedMaintenanceNext90Days: 0,
+        openMaintenanceCases: 0,
+        overdueAttentionAssets: 0,
+        preventiveCoveragePercent: 0,
+        averageRiskScore: 0,
       },
       trends: {
         highestRiskType: 'No data',
         highestRiskCategory: 'No data',
         recentMaintenanceLoad: 0,
+        unresolvedRate: 0,
+        replacementExposure: 0,
+        maintenanceFocusArea: 'No data',
       },
       recommendations: [
         {
-          title: 'No forecast available',
+          title: 'No recommendation available',
           detail:
             'Add assets or widen the selected filters to generate predictive insights.',
           priority: 'Low' as const,
+          owner: 'Admin',
+          confidence: 'Low' as const,
         },
       ],
+      riskDistribution: {
+        low: 0,
+        medium: 0,
+        high: 0,
+        critical: 0,
+      },
+      maintenancePressure: [],
       highRiskAssets: [],
     }
   }
@@ -870,13 +936,19 @@ async function buildAssetForecastInsights(
   const assetIds = assets.map(asset => asset.id)
   const { data, error } = await supabase
     .from('maintenance_requests')
-    .select('asset_id, status, created_at')
+    .select('asset_id, status, created_at, due_date')
     .in('asset_id', assetIds)
 
   if (error) {
     throw new Error(error.message)
   }
 
+  const today = new Date()
+  const todayUtc = Date.UTC(
+    today.getUTCFullYear(),
+    today.getUTCMonth(),
+    today.getUTCDate()
+  )
   const recentCutoff = new Date()
   recentCutoff.setDate(recentCutoff.getDate() - 90)
 
@@ -886,6 +958,8 @@ async function buildAssetForecastInsights(
       total: number
       recent90: number
       unresolved: number
+      overdueOpen: number
+      dueSoonOpen: number
       lastMaintenanceAt: string | null
     }
   >()
@@ -900,6 +974,8 @@ async function buildAssetForecastInsights(
       total: 0,
       recent90: 0,
       unresolved: 0,
+      overdueOpen: 0,
+      dueSoonOpen: 0,
       lastMaintenanceAt: null,
     }
 
@@ -917,6 +993,22 @@ async function buildAssetForecastInsights(
       normalizedStatus === 'in_progress'
     ) {
       entry.unresolved += 1
+
+      const dueDate = parseDate(row.due_date)
+      if (dueDate) {
+        const dueUtc = Date.UTC(
+          dueDate.getUTCFullYear(),
+          dueDate.getUTCMonth(),
+          dueDate.getUTCDate()
+        )
+        const daysUntilDue = Math.floor((dueUtc - todayUtc) / 86400000)
+
+        if (daysUntilDue < 0) {
+          entry.overdueOpen += 1
+        } else if (daysUntilDue <= 30) {
+          entry.dueSoonOpen += 1
+        }
+      }
     }
 
     if (maintenanceDate) {
@@ -931,29 +1023,83 @@ async function buildAssetForecastInsights(
 
   const typeRisk = new Map<string, number>()
   const categoryRisk = new Map<string, number>()
+  const categoryPressure = new Map<
+    string,
+    {
+      assetCount: number
+      totalRiskScore: number
+      openCases: number
+      dueSoonCount: number
+    }
+  >()
 
   const scoredAssets = assets.map(asset => {
     const type = normalizeLabel(asset.type, 'Other')
     const category = getCategoryName(asset)
     const ageYears = getAgeInYears(asset)
+    const maintenanceMode = asset.maintenance_enabled
+      ? normalizeMaintenanceMode(asset.maintenance_strategy)
+      : 'Corrective'
+    const nextServiceDate = parseDate(asset.next_service_date)
+    const nextServiceDelta = nextServiceDate
+      ? getDaysUntilDate(nextServiceDate, todayUtc)
+      : null
     const maintenance = maintenanceByAsset.get(asset.id) ?? {
       total: 0,
       recent90: 0,
       unresolved: 0,
+      overdueOpen: 0,
+      dueSoonOpen: 0,
       lastMaintenanceAt: null,
     }
 
-    const ageScore = Math.min(ageYears * 12, 45)
-    const maintenanceScore = Math.min(maintenance.total * 9, 30)
-    const recentScore = Math.min(maintenance.recent90 * 12, 18)
-    const unresolvedScore = Math.min(maintenance.unresolved * 10, 20)
+    const ageScore = Math.min(ageYears * 8, 28)
+    const maintenanceScore = Math.min(maintenance.total * 7, 18)
+    const recentScore = Math.min(maintenance.recent90 * 9, 18)
+    const unresolvedScore = Math.min(maintenance.unresolved * 10, 16)
+    const overdueScore = Math.min(maintenance.overdueOpen * 18, 24)
+    const dueSoonScore = Math.min(maintenance.dueSoonOpen * 8, 12)
+    const preventiveGapScore = asset.maintenance_enabled ? 0 : 8
+    const serviceWindowScore =
+      nextServiceDelta === null
+        ? asset.maintenance_enabled
+          ? 6
+          : 0
+        : nextServiceDelta < 0
+          ? 16
+          : nextServiceDelta <= 30
+            ? 9
+            : 0
     const riskScore = Math.min(
-      Math.round(ageScore + maintenanceScore + recentScore + unresolvedScore),
+      Math.round(
+        ageScore +
+          maintenanceScore +
+          recentScore +
+          unresolvedScore +
+          overdueScore +
+          dueSoonScore +
+          preventiveGapScore +
+          serviceWindowScore
+      ),
       100
     )
+    const dueSoonCount =
+      maintenance.dueSoonOpen +
+      (nextServiceDelta !== null && nextServiceDelta >= 0 && nextServiceDelta <= 30
+        ? 1
+        : 0)
+    const openCases = maintenance.unresolved
 
     typeRisk.set(type, (typeRisk.get(type) ?? 0) + riskScore)
     categoryRisk.set(category, (categoryRisk.get(category) ?? 0) + riskScore)
+    categoryPressure.set(category, {
+      assetCount: (categoryPressure.get(category)?.assetCount ?? 0) + 1,
+      totalRiskScore:
+        (categoryPressure.get(category)?.totalRiskScore ?? 0) + riskScore,
+      openCases: (categoryPressure.get(category)?.openCases ?? 0) + openCases,
+      dueSoonCount:
+        (categoryPressure.get(category)?.dueSoonCount ?? 0) + dueSoonCount,
+    })
 
     return {
       id: asset.id,
@@ -964,30 +1110,39 @@ async function buildAssetForecastInsights(
       ageYears,
       riskScore,
       maintenanceCount: maintenance.total,
+      openCases,
       recentMaintenanceCount: maintenance.recent90,
       lastMaintenanceAt: maintenance.lastMaintenanceAt,
+      nextServiceDate: asset.next_service_date ?? null,
+      maintenanceMode,
       estimatedReplacementCost: normalizeCurrencyNumber(asset.price),
       suggestedAction: getSuggestedAction(
         riskScore,
         ageYears,
-        maintenance.total
+        maintenance.total,
+        maintenance.unresolved,
+        nextServiceDelta
       ),
     }
   })
 
   const highRiskAssets = scoredAssets
-    .filter(asset => asset.riskScore >= 65)
+    .filter(asset => asset.riskScore >= 60)
     .sort(
-      (a, b) => b.riskScore - a.riskScore || b.maintenanceCount - a.maintenanceCount
+      (a, b) =>
+        b.riskScore - a.riskScore ||
+        b.openCases - a.openCases ||
+        b.maintenanceCount - a.maintenanceCount
     )
   const mediumRiskAssets = scoredAssets.filter(
-    asset => asset.riskScore >= 40 && asset.riskScore < 65
+    asset => asset.riskScore >= 35 && asset.riskScore < 60
   )
+  const criticalRiskAssets = scoredAssets.filter(asset => asset.riskScore >= 80)
   const predictedMaintenanceNext90Days = Math.round(
     scoredAssets.reduce((sum, asset) => {
-      if (asset.riskScore >= 80) return sum + 0.9
-      if (asset.riskScore >= 65) return sum + 0.65
-      if (asset.riskScore >= 40) return sum + 0.3
+      if (asset.riskScore >= 80) return sum + 1
+      if (asset.riskScore >= 60) return sum + 0.7
+      if (asset.riskScore >= 35) return sum + 0.35
       return sum + 0.08
     }, 0)
   )
@@ -997,26 +1152,96 @@ async function buildAssetForecastInsights(
   )
   const highestRiskType = getTopCountLabel(typeRisk)
   const highestRiskCategory = getTopCountLabel(categoryRisk)
+  const openMaintenanceCases = Array.from(maintenanceByAsset.values()).reduce(
+    (sum, item) => sum + item.unresolved,
+    0
+  )
+  const preventiveCoveragePercent = Number(
+    (
+      (assets.filter(asset => asset.maintenance_enabled).length / assets.length) *
+      100
+    ).toFixed(1)
+  )
+  const averageRiskScore = Number(
+    (
+      scoredAssets.reduce((sum, asset) => sum + asset.riskScore, 0) /
+      scoredAssets.length
+    ).toFixed(1)
+  )
+  const overdueAttentionAssets = scoredAssets.filter(asset => {
+    if (asset.openCases > 0 && asset.riskScore >= 60) return true
+    if (!asset.nextServiceDate) return false
+
+    const nextServiceDate = parseDate(asset.nextServiceDate)
+    if (!nextServiceDate) return false
+    return getDaysUntilDate(nextServiceDate, todayUtc) < 0
+  }).length
+  const unresolvedRate = Number(
+    (
+      (openMaintenanceCases / Math.max((data ?? []).length, 1)) *
+      100
+    ).toFixed(1)
+  )
+  const replacementExposure = scoredAssets
+    .filter(asset => asset.riskScore >= 80)
+    .reduce((sum, asset) => sum + (asset.estimatedReplacementCost ?? 0), 0)
+  const maintenancePressure = Array.from(categoryPressure.entries())
+    .map(([label, entry]) => ({
+      label,
+      assetCount: entry.assetCount,
+      averageRiskScore: Number(
+        (entry.totalRiskScore / Math.max(entry.assetCount, 1)).toFixed(1)
+      ),
+      openCases: entry.openCases,
+      dueSoonCount: entry.dueSoonCount,
+    }))
+    .sort(
+      (a, b) =>
+        b.openCases - a.openCases ||
+        b.averageRiskScore - a.averageRiskScore ||
+        b.dueSoonCount - a.dueSoonCount
+    )
+    .slice(0, 4)
+  const maintenanceFocusArea = maintenancePressure[0]?.label ?? highestRiskCategory
 
   return {
     summary: {
       highRiskAssets: highRiskAssets.length,
       mediumRiskAssets: mediumRiskAssets.length,
       predictedMaintenanceNext90Days,
+      openMaintenanceCases,
+      overdueAttentionAssets,
+      preventiveCoveragePercent,
+      averageRiskScore,
     },
     trends: {
       highestRiskType,
       highestRiskCategory,
       recentMaintenanceLoad,
+      unresolvedRate,
+      replacementExposure,
+      maintenanceFocusArea,
     },
     recommendations: buildRecommendations({
       highRiskAssetCount: highRiskAssets.length,
+      criticalRiskAssetCount: criticalRiskAssets.length,
       mediumRiskAssetCount: mediumRiskAssets.length,
       highestRiskType,
       highestRiskCategory,
       predictedMaintenanceNext90Days,
       recentMaintenanceLoad,
+      overdueAttentionAssets,
+      preventiveCoveragePercent,
+      maintenanceFocusArea,
+      openMaintenanceCases,
     }),
+    riskDistribution: {
+      low: scoredAssets.filter(asset => asset.riskScore < 35).length,
+      medium: mediumRiskAssets.length,
+      high: highRiskAssets.filter(asset => asset.riskScore < 80).length,
+      critical: criticalRiskAssets.length,
+    },
+    maintenancePressure,
     highRiskAssets: highRiskAssets.slice(0, 5).map(asset => ({
       id: asset.id,
       assetNo: asset.assetNo,
@@ -1026,7 +1251,10 @@ async function buildAssetForecastInsights(
       ageYears: asset.ageYears,
       riskScore: asset.riskScore,
       maintenanceCount: asset.maintenanceCount,
+      openCases: asset.openCases,
       lastMaintenanceAt: asset.lastMaintenanceAt,
+      nextServiceDate: asset.nextServiceDate,
+      maintenanceMode: asset.maintenanceMode,
       suggestedAction: asset.suggestedAction,
     })),
   }
@@ -1034,54 +1262,92 @@ async function buildAssetForecastInsights(
 
 function buildRecommendations({
   highRiskAssetCount,
+  criticalRiskAssetCount,
   mediumRiskAssetCount,
   highestRiskType,
   highestRiskCategory,
   predictedMaintenanceNext90Days,
   recentMaintenanceLoad,
+  overdueAttentionAssets,
+  preventiveCoveragePercent,
+  maintenanceFocusArea,
+  openMaintenanceCases,
 }: {
   highRiskAssetCount: number
+  criticalRiskAssetCount: number
   mediumRiskAssetCount: number
   highestRiskType: string
   highestRiskCategory: string
   predictedMaintenanceNext90Days: number
   recentMaintenanceLoad: number
+  overdueAttentionAssets: number
+  preventiveCoveragePercent: number
+  maintenanceFocusArea: string
+  openMaintenanceCases: number
 }) {
   const recommendations: CustomAssetReportResponse['insights']['recommendations'] = []
 
-  if (highRiskAssetCount > 0) {
+  if (criticalRiskAssetCount > 0) {
     recommendations.push({
-      title: 'Prioritize replacement planning',
-      detail: `${highRiskAssetCount} assets are already in the high-risk band. Start procurement planning for the oldest assets with repeated maintenance activity.`,
+      title: 'Escalate critical replacement review',
+      detail: `${criticalRiskAssetCount} assets are now in the critical-risk band. Start technical review and replacement justification for the oldest units with repeated failures.`,
       priority: 'High',
+      owner: 'Admin',
+      confidence: 'High',
+    })
+  }
+
+  if (overdueAttentionAssets > 0) {
+    recommendations.push({
+      title: 'Clear overdue maintenance backlog',
+      detail: `${overdueAttentionAssets} assets already require overdue attention. Triage the ${maintenanceFocusArea.toLowerCase()} area first to reduce service disruption risk.`,
+      priority: 'High',
+      owner: 'Maintenance Team',
+      confidence: 'High',
     })
   }
 
   if (predictedMaintenanceNext90Days > 0) {
     recommendations.push({
-      title: 'Prepare the next 90-day maintenance workload',
-      detail: `Expected maintenance demand is around ${predictedMaintenanceNext90Days} cases. Reserve support capacity for ${highestRiskType.toLowerCase()} assets first.`,
+      title: 'Prepare the next 90-day maintenance load',
+      detail: `Expected maintenance demand is around ${predictedMaintenanceNext90Days} cases. Reserve support capacity for ${highestRiskType.toLowerCase()} assets before the next quarter closes.`,
       priority: highRiskAssetCount > 0 ? 'High' : 'Medium',
+      owner: 'Admin Assistant',
+      confidence: highRiskAssetCount > 0 ? 'High' : 'Medium',
     })
   }
 
-  if (mediumRiskAssetCount > 0) {
+  if (preventiveCoveragePercent < 70) {
     recommendations.push({
-      title: 'Schedule preventive inspections',
-      detail: `${mediumRiskAssetCount} assets are in the medium-risk band. Run preventive checks for the ${highestRiskCategory.toLowerCase()} category before the next reporting cycle.`,
+      title: 'Expand preventive maintenance coverage',
+      detail: `Only ${preventiveCoveragePercent}% of filtered assets have preventive maintenance enabled. Prioritize the ${highestRiskCategory.toLowerCase()} category to reduce reactive cases.`,
       priority: 'Medium',
+      owner: 'Asset Admin',
+      confidence: 'Medium',
+    })
+  }
+
+  if (mediumRiskAssetCount > 0 && openMaintenanceCases > 0) {
+    recommendations.push({
+      title: 'Convert repeated issues into inspection actions',
+      detail: `${mediumRiskAssetCount} assets remain in the medium-risk band with ${openMaintenanceCases} open cases. Schedule targeted inspection rounds for ${maintenanceFocusArea.toLowerCase()} assets.`,
+      priority: 'Medium',
+      owner: 'Maintenance Team',
+      confidence: 'Medium',
     })
   }
 
   if (recommendations.length === 0) {
     recommendations.push({
       title: 'Continue routine monitoring',
-      detail: `No immediate risk cluster was detected. Keep monitoring and review again if maintenance activity rises above ${recentMaintenanceLoad} recent cases.`,
+      detail: `No immediate risk cluster was detected. Keep monitoring and review again if maintenance activity rises above ${recentMaintenanceLoad} recent cases in the current filter scope.`,
       priority: 'Low',
+      owner: 'Admin',
+      confidence: 'Low',
     })
   }
 
-  return recommendations
+  return recommendations.slice(0, 4)
 }
 
 function parseDate(value?: string | null) {
@@ -1120,21 +1386,44 @@ function normalizeCurrencyNumber(value: number | string | null | undefined) {
 function getSuggestedAction(
   riskScore: number,
   ageYears: number,
-  maintenanceCount: number
+  maintenanceCount: number,
+  openCases: number,
+  nextServiceDelta: number | null
 ) {
-  if (riskScore >= 80 || (ageYears >= 5 && maintenanceCount >= 2)) {
+  if (
+    riskScore >= 80 ||
+    openCases >= 2 ||
+    (nextServiceDelta !== null && nextServiceDelta < 0)
+  ) {
     return 'Plan replacement'
   }
 
-  if (riskScore >= 65) {
-    return 'Schedule preventive maintenance'
+  if (riskScore >= 60 || (ageYears >= 5 && maintenanceCount >= 2)) {
+    return 'Schedule immediate service'
   }
 
-  if (riskScore >= 40) {
-    return 'Monitor closely'
+  if (riskScore >= 35) {
+    return 'Run preventive inspection'
   }
 
   return 'Routine review'
+}
+
+function normalizeMaintenanceMode(value?: string | null) {
+  const normalized = String(value ?? '').trim().toLowerCase()
+  if (normalized === 'preventive') return 'Preventive'
+  if (normalized === 'predictive') return 'Predictive'
+  if (normalized === 'hybrid') return 'Hybrid'
+  return 'Corrective'
+}
+
+function getDaysUntilDate(date: Date, todayUtc: number) {
+  const dueUtc = Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate()
+  )
+  return Math.floor((dueUtc - todayUtc) / 86400000)
 }
 
 function getTopCountLabel(counts: Map<string, number>) {

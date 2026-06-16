@@ -32,6 +32,7 @@ function formatDateLabel(date?: Date) {
     month: 'short',
     day: '2-digit',
     year: 'numeric',
+    timeZone: 'UTC',
   })
 }
 
@@ -39,9 +40,9 @@ function toInputDate(date?: Date) {
   if (!date) {
     return ''
   }
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
+  const year = date.getUTCFullYear()
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(date.getUTCDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
@@ -49,6 +50,14 @@ function parseInputDate(value?: string | null) {
   if (!value) {
     return undefined
   }
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (match) {
+    const [, year, month, day] = match
+    const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)))
+    return Number.isNaN(date.getTime()) ? undefined : date
+  }
+
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) {
     return undefined
@@ -277,7 +286,7 @@ export function AssetYearPicker({
         </PopoverTrigger>
         <PopoverContent className="w-60 p-0" align="start">
           <div className="max-h-64 overflow-y-auto p-2">
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
               {years.map(item => (
                 <Button
                   key={item}

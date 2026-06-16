@@ -12,9 +12,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Spinner } from '@/components/ui/spinner'
+import { isStrongPassword, passwordPolicyHint } from '@/lib/passwordPolicy'
 import { toast } from 'sonner'
 
 export default function SetPasswordPage() {
@@ -53,8 +54,8 @@ export default function SetPasswordPage() {
     event.preventDefault()
     setError(null)
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.')
+    if (!isStrongPassword(password)) {
+      setError(passwordPolicyHint)
       return
     }
 
@@ -89,21 +90,22 @@ export default function SetPasswordPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 value={password}
                 onChange={event => setPassword(event.target.value)}
                 autoComplete="new-password"
                 required
                 disabled={!ready}
               />
+              <p className="text-xs text-muted-foreground">
+                {passwordPolicyHint}
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirm password</Label>
-              <Input
+              <PasswordInput
                 id="confirm-password"
-                type="password"
                 value={confirmPassword}
                 onChange={event => setConfirmPassword(event.target.value)}
                 autoComplete="new-password"

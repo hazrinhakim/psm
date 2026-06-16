@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,8 @@ import { AssetDeleteButton } from '@/components/assets/AssetDeleteButton'
 import { AssetSearchForm } from '@/components/assets/AssetSearchForm'
 import { CopyButton } from '@/components/assets/CopyButton'
 import { AnimatedCount } from '@/components/assets/AnimatedCount'
+import { AssetAssigneeCombobox } from '@/components/assets/AssetAssigneeCombobox'
+import { AssetSelectField } from '@/components/assets/AssetSelectField'
 import {
   Tooltip,
   TooltipContent,
@@ -51,6 +54,7 @@ import {
   Printer,
   Monitor,
   Cpu,
+  ShieldCheck,
 } from 'lucide-react'
 
 type SearchParams = {
@@ -97,14 +101,48 @@ type Asset = {
   mouse_serial_no?: string | null
   mouse_asset_no?: string | null
   accessories?: string | null
+  maintenance_enabled?: boolean | null
+  maintenance_strategy?: string | null
+  maintenance_priority?: string | null
+  service_interval_days?: number | null
+  last_service_date?: string | null
+  next_service_date?: string | null
+  warranty_expiry_date?: string | null
+  expected_lifespan_years?: number | null
+  maintenance_notes?: string | null
   created_at?: string | null
   asset_categories?: AssetCategory | AssetCategory[] | null
+}
+
+type MaintenanceHistoryEntry = {
+  id: string
+  title?: string | null
+  status?: string | null
+  request_type?: string | null
+  due_date?: string | null
+  resolved_at?: string | null
+  updated_at?: string | null
+  resolution_summary?: string | null
+}
+
+type AssignmentHistoryEntry = {
+  id: string
+  assigned_user_name?: string | null
+  assigned_at?: string | null
+  unassigned_at?: string | null
+  ended_reason?: string | null
 }
 
 function formatDateInput(value?: string | null) {
   if (!value) {
     return ''
   }
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (match) {
+    return value
+  }
+
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) {
     return ''
@@ -116,7 +154,11 @@ function formatDate(value?: string | null) {
   if (!value) {
     return 'Not set'
   }
-  const date = new Date(value)
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  const date = match
+    ? new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])))
+    : new Date(value)
   if (Number.isNaN(date.getTime())) {
     return value
   }
@@ -124,6 +166,7 @@ function formatDate(value?: string | null) {
     year: 'numeric',
     month: 'short',
     day: '2-digit',
+    timeZone: 'UTC',
   })
 }
 
@@ -154,8 +197,67 @@ function getCategoryName(asset: Asset) {
   return category?.name ?? 'Uncategorized'
 }
 
+function getMaintenanceStrategyLabel(value?: string | null) {
+  const normalized = String(value ?? '').trim().toLowerCase()
+  if (normalized === 'preventive') return 'Preventive'
+  if (normalized === 'hybrid') return 'Hybrid'
+  return 'Corrective'
+}
+
+function getMaintenancePriorityLabel(value?: string | null) {
+  const normalized = String(value ?? '').trim().toLowerCase()
+  if (normalized === 'low') return 'Low'
+  if (normalized === 'high') return 'High'
+  if (normalized === 'critical') return 'Critical'
+  return 'Medium'
+}
+
+function getMaintenanceRequestBadgeClass(value?: string | null) {
+  const raw = String(value ?? '').trim().toLowerCase()
+  if (raw === 'resolved' || raw === 'completed') {
+    return 'border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-200'
+  }
+  if (raw === 'in progress' || raw === 'in_progress') {
+    return 'border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-200'
+  }
+  return 'border-amber-200 bg-amber-100 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-200'
+}
+
+function getAssignmentEndReasonLabel(value?: string | null) {
+  const raw = String(value ?? '').trim().toLowerCase()
+  if (raw === 'reassigned') return 'Reassigned'
+  if (raw === 'manual_unassign') return 'Manual unassign'
+  if (raw === 'user_deleted') return 'User removed'
+  if (raw === 'asset_deleted') return 'Asset deleted'
+  return 'Current assignment'
+}
+
+function getAssignmentEndReasonBadgeClass(value?: string | null) {
+  const raw = String(value ?? '').trim().toLowerCase()
+  if (!raw) {
+    return 'border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-200'
+  }
+  if (raw === 'reassigned') {
+    return 'border-blue-200 bg-blue-100 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-200'
+  }
+  if (raw === 'user_deleted') {
+    return 'border-rose-200 bg-rose-100 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-200'
+  }
+  return 'border-amber-200 bg-amber-100 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-200'
+}
+
 // Component untuk Asset Detail Dialog dengan design premium
-function AssetDetailsDialog({ asset, statusLabel }: { asset: Asset; statusLabel: string }) {
+function AssetDetailsDialog({
+  asset,
+  statusLabel,
+  maintenanceHistory,
+  assignmentHistory,
+}: {
+  asset: Asset
+  statusLabel: string
+  maintenanceHistory: MaintenanceHistoryEntry[]
+  assignmentHistory: AssignmentHistoryEntry[]
+}) {
   // Tentukan icon berdasarkan jenis asset
   const getAssetIcon = () => {
     const type = asset.type?.toLowerCase() || ''
@@ -245,6 +347,160 @@ function AssetDetailsDialog({ asset, statusLabel }: { asset: Asset; statusLabel:
                   <p className="break-words font-medium text-foreground">{asset.qr_code || 'N/A'}</p>
                 </div>
               </div>
+            </div>
+
+            <div className="group relative overflow-hidden rounded-xl border bg-gradient-to-br from-muted/60 to-background p-5 transition-all duration-300 hover:shadow-md">
+              <div className={`absolute inset-0 bg-gradient-to-br ${accentColor} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <ShieldCheck className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                Maintenance Profile
+              </h3>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Maintenance mode</p>
+                  <p className="font-medium text-foreground">
+                    {asset.maintenance_enabled === false ? 'Disabled' : 'Enabled'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Strategy</p>
+                  <p className="font-medium text-foreground">
+                    {getMaintenanceStrategyLabel(asset.maintenance_strategy)}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Priority</p>
+                  <p className="font-medium text-foreground">
+                    {getMaintenancePriorityLabel(asset.maintenance_priority)}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Service interval</p>
+                  <p className="font-medium text-foreground">
+                    {asset.service_interval_days ? `${asset.service_interval_days} day(s)` : 'Not set'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Last service date</p>
+                  <p className="font-medium text-foreground">{formatDate(asset.last_service_date)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Next service date</p>
+                  <p className="font-medium text-foreground">{formatDate(asset.next_service_date)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Warranty expiry</p>
+                  <p className="font-medium text-foreground">{formatDate(asset.warranty_expiry_date)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Expected lifespan</p>
+                  <p className="font-medium text-foreground">
+                    {asset.expected_lifespan_years ? `${asset.expected_lifespan_years} year(s)` : 'Not set'}
+                  </p>
+                </div>
+                <div className="space-y-1 sm:col-span-2 lg:col-span-3">
+                  <p className="text-xs text-muted-foreground">Maintenance notes</p>
+                  <p className="break-words font-medium text-foreground">
+                    {asset.maintenance_notes || 'Not set'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="group relative overflow-hidden rounded-xl border bg-gradient-to-br from-muted/60 to-background p-5 transition-all duration-300 hover:shadow-md">
+              <div className={`absolute inset-0 bg-gradient-to-br ${accentColor} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                Service History
+              </h3>
+              {maintenanceHistory.length === 0 ? (
+                <p className="mt-4 text-sm text-muted-foreground">
+                  No maintenance history recorded for this asset yet.
+                </p>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {maintenanceHistory.map(entry => (
+                    <div
+                      key={entry.id}
+                      className="rounded-xl border border-border/70 bg-background/70 px-4 py-3"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="font-medium text-foreground">
+                            {entry.title ?? 'Maintenance request'}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {[
+                              entry.request_type ?? 'corrective',
+                              entry.due_date ? `Due ${formatDate(entry.due_date)}` : null,
+                              entry.resolved_at
+                                ? `Resolved ${formatDate(entry.resolved_at)}`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </p>
+                        </div>
+                        <Badge className={`${getMaintenanceRequestBadgeClass(entry.status)} font-medium px-3 py-1`}>
+                          {entry.status ?? 'Pending'}
+                        </Badge>
+                      </div>
+                      {entry.resolution_summary && (
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          {entry.resolution_summary}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="group relative overflow-hidden rounded-xl border bg-gradient-to-br from-muted/60 to-background p-5 transition-all duration-300 hover:shadow-md">
+              <div className={`absolute inset-0 bg-gradient-to-br ${accentColor} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <User className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                Assignment History
+              </h3>
+              {assignmentHistory.length === 0 ? (
+                <p className="mt-4 text-sm text-muted-foreground">
+                  No assignment history recorded for this asset yet.
+                </p>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  {assignmentHistory.map(entry => (
+                    <div
+                      key={entry.id}
+                      className="rounded-xl border border-border/70 bg-background/70 px-4 py-3"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="font-medium text-foreground">
+                            {entry.assigned_user_name ?? 'Unknown user'}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {[
+                              entry.assigned_at
+                                ? `Assigned ${formatDate(entry.assigned_at)}`
+                                : null,
+                              entry.unassigned_at
+                                ? `Unassigned ${formatDate(entry.unassigned_at)}`
+                                : 'Still assigned',
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </p>
+                        </div>
+                        <Badge
+                          className={`${getAssignmentEndReasonBadgeClass(entry.ended_reason)} px-3 py-1 font-medium`}
+                        >
+                          {getAssignmentEndReasonLabel(entry.ended_reason)}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Ownership Card */}
@@ -431,6 +687,22 @@ export async function AssetManagement({
   const role = normalizeRole(profile?.role)
   const canManage =
     role === 'admin' || role === 'admin_assistant'
+
+  const { data: assigneeProfiles } = canManage
+    ? await supabase
+        .from('profiles')
+        .select('full_name')
+        .not('full_name', 'is', null)
+        .order('full_name')
+    : { data: [] }
+
+  const assigneeNames = Array.from(
+    new Set(
+      (assigneeProfiles ?? [])
+        .map(profileRow => profileRow.full_name?.trim() ?? '')
+        .filter(Boolean)
+    )
+  )
   let assetQuery = supabase
     .from('assets')
     .select(
@@ -464,6 +736,15 @@ export async function AssetManagement({
       mouse_serial_no,
       mouse_asset_no,
       accessories,
+      maintenance_enabled,
+      maintenance_strategy,
+      maintenance_priority,
+      service_interval_days,
+      last_service_date,
+      next_service_date,
+      warranty_expiry_date,
+      expected_lifespan_years,
+      maintenance_notes,
       created_at,
       asset_categories ( name )
     `
@@ -482,6 +763,75 @@ export async function AssetManagement({
 
   const { data: assets } = await assetQuery
   const assetsList = (assets ?? []) as Asset[]
+  const assetIds = assetsList.map(asset => asset.id)
+
+  const { data: maintenanceHistoryRows } =
+    assetIds.length > 0
+      ? await supabase
+          .from('maintenance_requests')
+          .select(
+            'id, asset_id, title, status, request_type, due_date, resolved_at, updated_at, resolution_summary'
+          )
+          .in('asset_id', assetIds)
+          .order('updated_at', { ascending: false })
+      : { data: [] }
+
+  const maintenanceHistoryByAssetId = (maintenanceHistoryRows ?? []).reduce<
+    Record<string, MaintenanceHistoryEntry[]>
+  >((acc, row) => {
+    const assetId = (row as MaintenanceHistoryEntry & { asset_id?: string | null })
+      .asset_id
+    if (!assetId) {
+      return acc
+    }
+    const list = acc[assetId] ?? []
+    if (list.length < 5) {
+      list.push({
+        id: row.id,
+        title: row.title,
+        status: row.status,
+        request_type: row.request_type,
+        due_date: row.due_date,
+        resolved_at: row.resolved_at,
+        updated_at: row.updated_at,
+        resolution_summary: row.resolution_summary,
+      })
+    }
+    acc[assetId] = list
+    return acc
+  }, {})
+
+  const { data: assignmentHistoryRows } =
+    assetIds.length > 0
+      ? await supabase
+          .from('asset_assignment_history')
+          .select(
+            'id, asset_id, assigned_user_name, assigned_at, unassigned_at, ended_reason'
+          )
+          .in('asset_id', assetIds)
+          .order('assigned_at', { ascending: false })
+      : { data: [] }
+
+  const assignmentHistoryByAssetId = (assignmentHistoryRows ?? []).reduce<
+    Record<string, AssignmentHistoryEntry[]>
+  >((acc, row) => {
+    const assetId = (
+      row as AssignmentHistoryEntry & { asset_id?: string | null }
+    ).asset_id
+    if (!assetId) {
+      return acc
+    }
+    const list = acc[assetId] ?? []
+    list.push({
+      id: row.id,
+      assigned_user_name: row.assigned_user_name,
+      assigned_at: row.assigned_at,
+      unassigned_at: row.unassigned_at,
+      ended_reason: row.ended_reason,
+    })
+    acc[assetId] = list
+    return acc
+  }, {})
 
   const { data: categories } = canManage
     ? await supabase
@@ -489,17 +839,6 @@ export async function AssetManagement({
         .select('id, name')
         .order('name')
     : { data: [] }
-
-  const { data: assignees } = canManage
-    ? await supabase
-        .from('profiles')
-        .select('full_name')
-        .not('full_name', 'is', null)
-    : { data: [] }
-
-  const assigneeNames = Array.from(
-    new Set((assignees ?? []).map(entry => entry.full_name).filter(Boolean))
-  )
 
   const shouldGateResults = canManage && !query
   const filteredAssets = shouldGateResults
@@ -541,14 +880,6 @@ export async function AssetManagement({
 
   return (
     <div className="space-y-6 p-1">
-      {assigneeNames.length > 0 && (
-        <datalist id="assignee-list">
-          {assigneeNames.map(name => (
-            <option key={name} value={name} />
-          ))}
-        </datalist>
-      )}
-
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <h2 className="text-2xl font-semibold tracking-tight">
@@ -564,7 +895,7 @@ export async function AssetManagement({
                   Add Asset
                 </Button>
               </DialogTrigger>
-                <DialogContent className="max-h-[92vh] w-[95vw] max-w-6xl overflow-x-hidden border border-border bg-background shadow-2xl sm:max-w-6xl">
+                <DialogContent className="max-h-[92vh] w-[95vw] max-w-6xl overflow-hidden border border-border bg-background shadow-2xl sm:max-w-6xl">
                   <ScrollArea className="max-h-[82vh] pr-4">
                     <DialogHeader>
                       <DialogTitle className="text-xl font-bold text-foreground">
@@ -655,12 +986,11 @@ export async function AssetManagement({
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="asset-user">Assigned User</Label>
-                            <Input
+                            <AssetAssigneeCombobox
                               id="asset-user"
                               name="user_name"
+                              options={assigneeNames}
                               placeholder="Search signed-in user"
-                              list={assigneeNames.length ? 'assignee-list' : undefined}
-                              className="h-11" 
                             />
                             <p className="text-xs text-muted-foreground">
                               Must match a signed-in user profile.
@@ -854,6 +1184,114 @@ export async function AssetManagement({
 
                       <Separator className="bg-border" />
 
+                      <div className="space-y-3">
+                        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                          <ShieldCheck className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                          Maintenance Setup
+                        </h3>
+                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                          <div className="space-y-2">
+                            <Label htmlFor="maintenance-enabled">Maintenance</Label>
+                            <AssetSelectField
+                              id="maintenance-enabled"
+                              name="maintenance_enabled"
+                              placeholder="Select maintenance mode"
+                              defaultValue="enabled"
+                              options={[
+                                { value: 'enabled', label: 'Enabled' },
+                                { value: 'disabled', label: 'Disabled' },
+                              ]}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="maintenance-strategy">Strategy</Label>
+                            <AssetSelectField
+                              id="maintenance-strategy"
+                              name="maintenance_strategy"
+                              placeholder="Select strategy"
+                              defaultValue="corrective"
+                              options={[
+                                { value: 'corrective', label: 'Corrective' },
+                                { value: 'preventive', label: 'Preventive' },
+                                { value: 'hybrid', label: 'Hybrid' },
+                              ]}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="maintenance-priority">Priority</Label>
+                            <AssetSelectField
+                              id="maintenance-priority"
+                              name="maintenance_priority"
+                              placeholder="Select priority"
+                              defaultValue="medium"
+                              options={[
+                                { value: 'low', label: 'Low' },
+                                { value: 'medium', label: 'Medium' },
+                                { value: 'high', label: 'High' },
+                                { value: 'critical', label: 'Critical' },
+                              ]}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="service-interval-days">Service Interval (days)</Label>
+                            <Input
+                              id="service-interval-days"
+                              name="service_interval_days"
+                              type="number"
+                              min="1"
+                              placeholder="180"
+                              className="h-11"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="last-service-date">Last Service Date</Label>
+                            <AssetDatePicker
+                              id="last-service-date"
+                              name="last_service_date"
+                              placeholder="Pick last service date"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="next-service-date">Next Service Date</Label>
+                            <AssetDatePicker
+                              id="next-service-date"
+                              name="next_service_date"
+                              placeholder="Pick next service date"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="warranty-expiry-date">Warranty Expiry</Label>
+                            <AssetDatePicker
+                              id="warranty-expiry-date"
+                              name="warranty_expiry_date"
+                              placeholder="Pick warranty expiry"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="expected-lifespan-years">Expected Lifespan (years)</Label>
+                            <Input
+                              id="expected-lifespan-years"
+                              name="expected_lifespan_years"
+                              type="number"
+                              min="1"
+                              placeholder="5"
+                              className="h-11"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="maintenance-notes">Maintenance Notes</Label>
+                          <Textarea
+                            id="maintenance-notes"
+                            name="maintenance_notes"
+                            placeholder="Vendor contact, service remarks, or maintenance instructions"
+                            className="min-h-[96px]"
+                          />
+                        </div>
+                      </div>
+
+                      <Separator className="bg-border" />
+
                       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         <div className="space-y-2 md:col-span-2 xl:col-span-3">
                           <Label htmlFor="asset-accessories">Accessories</Label>
@@ -964,7 +1402,7 @@ export async function AssetManagement({
       <AssetSearchForm basePath={basePath} query={query} />
 
       {/* Assets Grid - with premium card design */}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {filteredAssets.length === 0 && (
           <div className="col-span-full h-80 flex items-center justify-center">
             <div className="flex flex-col items-center justify-center">
@@ -1018,9 +1456,8 @@ export async function AssetManagement({
             >
               <CardHeader className="space-y-4 bg-muted/20">
               
-                <div className="flex items-start justify-between gap-3 grid grid-cols-5">
-
-                  <div className="flex items-start gap-3 min-w-0 flex-1 col-span-4">
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                  <div className="flex min-w-0 items-start gap-3">
                     <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
                       <AssetIcon className="h-5 w-5" />
                     </div>
@@ -1047,7 +1484,7 @@ export async function AssetManagement({
                     </div>
                   </div>
 
-                  <Badge className={`${getStatusBadge(status)} flex-shrink-0 text-xs px-2 py-0 col-span-1`}>
+                  <Badge className={`${getStatusBadge(status)} w-fit flex-shrink-0 text-xs px-2 py-0`}>
                     {statusLabel}
                   </Badge>
                 </div>
@@ -1080,7 +1517,12 @@ export async function AssetManagement({
                 </div>
 
                 <div className="flex flex-wrap gap-2 border-t pt-4">
-                  <AssetDetailsDialog asset={asset} statusLabel={statusLabel} />
+                  <AssetDetailsDialog
+                    asset={asset}
+                    statusLabel={statusLabel}
+                    maintenanceHistory={maintenanceHistoryByAssetId[asset.id] ?? []}
+                    assignmentHistory={assignmentHistoryByAssetId[asset.id] ?? []}
+                  />
                   
                   {canManage && (
                     <>
@@ -1193,12 +1635,11 @@ export async function AssetManagement({
                                   </div>
                                   <div className="space-y-2">
                                     <Label htmlFor={`user-${asset.id}`}>Assigned User</Label>
-                                    <Input
+                                    <AssetAssigneeCombobox
                                       id={`user-${asset.id}`}
                                       name="user_name"
                                       defaultValue={asset.user_name ?? ''}
-                                      list={assigneeNames.length ? 'assignee-list' : undefined}
-                                      className="h-11"
+                                      options={assigneeNames}
                                     />
                                     <p className="text-xs text-muted-foreground">
                                       Must match a signed-in user profile.
@@ -1388,6 +1829,118 @@ export async function AssetManagement({
                                       className="h-11"
                                     />
                                   </div>
+                                </div>
+                              </div>
+
+                              <Separator className="bg-border" />
+
+                              <div className="space-y-3">
+                                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                  <ShieldCheck className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                                  Maintenance Setup
+                                </h3>
+                                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`maintenance-enabled-${asset.id}`}>Maintenance</Label>
+                                    <AssetSelectField
+                                      id={`maintenance-enabled-${asset.id}`}
+                                      name="maintenance_enabled"
+                                      placeholder="Select maintenance mode"
+                                      defaultValue={asset.maintenance_enabled === false ? 'disabled' : 'enabled'}
+                                      options={[
+                                        { value: 'enabled', label: 'Enabled' },
+                                        { value: 'disabled', label: 'Disabled' },
+                                      ]}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`maintenance-strategy-${asset.id}`}>Strategy</Label>
+                                    <AssetSelectField
+                                      id={`maintenance-strategy-${asset.id}`}
+                                      name="maintenance_strategy"
+                                      placeholder="Select strategy"
+                                      defaultValue={asset.maintenance_strategy ?? 'corrective'}
+                                      options={[
+                                        { value: 'corrective', label: 'Corrective' },
+                                        { value: 'preventive', label: 'Preventive' },
+                                        { value: 'hybrid', label: 'Hybrid' },
+                                      ]}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`maintenance-priority-${asset.id}`}>Priority</Label>
+                                    <AssetSelectField
+                                      id={`maintenance-priority-${asset.id}`}
+                                      name="maintenance_priority"
+                                      placeholder="Select priority"
+                                      defaultValue={asset.maintenance_priority ?? 'medium'}
+                                      options={[
+                                        { value: 'low', label: 'Low' },
+                                        { value: 'medium', label: 'Medium' },
+                                        { value: 'high', label: 'High' },
+                                        { value: 'critical', label: 'Critical' },
+                                      ]}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`service-interval-days-${asset.id}`}>Service Interval (days)</Label>
+                                    <Input
+                                      id={`service-interval-days-${asset.id}`}
+                                      name="service_interval_days"
+                                      type="number"
+                                      min="1"
+                                      defaultValue={asset.service_interval_days ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`last-service-date-${asset.id}`}>Last Service Date</Label>
+                                    <AssetDatePicker
+                                      id={`last-service-date-${asset.id}`}
+                                      name="last_service_date"
+                                      defaultValue={formatDateInput(asset.last_service_date)}
+                                      placeholder="Pick last service date"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`next-service-date-${asset.id}`}>Next Service Date</Label>
+                                    <AssetDatePicker
+                                      id={`next-service-date-${asset.id}`}
+                                      name="next_service_date"
+                                      defaultValue={formatDateInput(asset.next_service_date)}
+                                      placeholder="Pick next service date"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`warranty-expiry-date-${asset.id}`}>Warranty Expiry</Label>
+                                    <AssetDatePicker
+                                      id={`warranty-expiry-date-${asset.id}`}
+                                      name="warranty_expiry_date"
+                                      defaultValue={formatDateInput(asset.warranty_expiry_date)}
+                                      placeholder="Pick warranty expiry"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor={`expected-lifespan-years-${asset.id}`}>Expected Lifespan (years)</Label>
+                                    <Input
+                                      id={`expected-lifespan-years-${asset.id}`}
+                                      name="expected_lifespan_years"
+                                      type="number"
+                                      min="1"
+                                      defaultValue={asset.expected_lifespan_years ?? ''}
+                                      className="h-11"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor={`maintenance-notes-${asset.id}`}>Maintenance Notes</Label>
+                                  <Textarea
+                                    id={`maintenance-notes-${asset.id}`}
+                                    name="maintenance_notes"
+                                    defaultValue={asset.maintenance_notes ?? ''}
+                                    placeholder="Vendor contact, service remarks, or maintenance instructions"
+                                    className="min-h-[96px]"
+                                  />
                                 </div>
                               </div>
 

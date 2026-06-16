@@ -662,8 +662,8 @@ export function renderAssetReportPrintDocument(
       </section>
 
       <section class="section">
-        <h2 class="section-title">Predictions & Recommendations</h2>
-        <p class="section-note">Forward-looking asset risk scoring based on asset age and maintenance history in the current filtered scope.</p>
+        <h2 class="section-title">AI Maintenance Recommendations</h2>
+        <p class="section-note">Rule-based maintenance intelligence built from asset age, service profile, due dates, and maintenance activity in the current filtered scope.</p>
         <div class="summary-grid">
           ${renderSummaryCard(
             'High Risk Assets',
@@ -671,14 +671,19 @@ export function renderAssetReportPrintDocument(
             'Immediate review candidates'
           )}
           ${renderSummaryCard(
-            'Medium Risk Assets',
-            report.insights.summary.mediumRiskAssets,
-            'Preventive action recommended'
+            'Overdue Attention',
+            report.insights.summary.overdueAttentionAssets,
+            'Assets needing urgent service action'
+          )}
+          ${renderSummaryCard(
+            'Preventive Coverage',
+            `${report.insights.summary.preventiveCoveragePercent}%`,
+            'Assets with maintenance setup enabled'
           )}
           ${renderSummaryCard(
             'Predicted Maintenance',
             report.insights.summary.predictedMaintenanceNext90Days,
-            'Estimated cases in the next 90 days'
+            'Estimated cases in next 90 days'
           )}
         </div>
         <div class="forecast-grid" style="margin-top: 14px;">
@@ -693,6 +698,7 @@ export function renderAssetReportPrintDocument(
                     <div>
                       <p class="recommendation-title">${escapeHtml(item.title)}</p>
                       <p class="recommendation-detail">${escapeHtml(item.detail)}</p>
+                      <p class="section-note" style="margin: 10px 0 0;">Owner: ${escapeHtml(item.owner)} · Confidence: ${escapeHtml(item.confidence)}</p>
                     </div>
                     <span class="pill ${escapeHtml(item.priority)}">${escapeHtml(item.priority)}</span>
                   </div>
@@ -708,10 +714,10 @@ export function renderAssetReportPrintDocument(
               <div class="list">
                 ${renderBarRow(
                   {
-                    label: `Highest Risk Type: ${report.insights.trends.highestRiskType}`,
-                    value: report.insights.summary.highRiskAssets,
+                    label: `Open Maintenance Cases: ${report.insights.summary.openMaintenanceCases} cases`,
+                    value: report.insights.summary.openMaintenanceCases,
                   },
-                  Math.max(report.insights.summary.highRiskAssets, 1)
+                  Math.max(report.insights.summary.openMaintenanceCases, 1)
                 )}
                 ${renderBarRow(
                   {
@@ -722,7 +728,29 @@ export function renderAssetReportPrintDocument(
                   'warm'
                 )}
               </div>
-              <p class="section-note" style="margin: 14px 0 0;">Highest risk category: ${escapeHtml(report.insights.trends.highestRiskCategory)}</p>
+              <p class="section-note" style="margin: 14px 0 0;">Focus area: ${escapeHtml(report.insights.trends.maintenanceFocusArea)} · Highest risk type: ${escapeHtml(report.insights.trends.highestRiskType)} · Unresolved rate: ${escapeHtml(String(report.insights.trends.unresolvedRate))}% · Replacement exposure: ${escapeHtml(formatCurrencyCompact(report.insights.trends.replacementExposure))}</p>
+            </div>
+            <div class="panel">
+              <h3>Maintenance Pressure</h3>
+              <div class="risk-list">
+                ${
+                  report.insights.maintenancePressure.length > 0
+                    ? report.insights.maintenancePressure
+                        .map(
+                          item => `<div class="risk-card">
+                    <div class="risk-top">
+                      <div>
+                        <p class="risk-name">${escapeHtml(item.label)}</p>
+                        <p class="risk-meta">${item.assetCount} assets · ${item.openCases} open cases · ${item.dueSoonCount} due soon</p>
+                      </div>
+                      <span class="risk-score">${item.averageRiskScore}</span>
+                    </div>
+                  </div>`
+                        )
+                        .join('')
+                    : renderEmptyState()
+                }
+              </div>
             </div>
             <div class="panel">
               <h3>High-risk Assets</h3>
@@ -740,8 +768,15 @@ export function renderAssetReportPrintDocument(
                       <span class="risk-score">${asset.riskScore}</span>
                     </div>
                     <div class="chip-row">
+                      <span class="chip">${escapeHtml(asset.maintenanceMode)}</span>
                       <span class="chip">Age ${asset.ageYears} yrs</span>
                       <span class="chip">${asset.maintenanceCount} maintenance cases</span>
+                      <span class="chip">${asset.openCases} open cases</span>
+                      ${
+                        asset.nextServiceDate
+                          ? `<span class="chip">Next service ${escapeHtml(formatDateLabel(asset.nextServiceDate))}</span>`
+                          : ''
+                      }
                       <span class="chip action">${escapeHtml(asset.suggestedAction)}</span>
                     </div>
                   </div>`
@@ -825,6 +860,32 @@ function renderBarRow(row: PrintRow, max: number, tone?: 'warm') {
 
 function renderEmptyState() {
   return '<p style="margin: 0; color: #475569; font-size: 13px; line-height: 1.6;">No data available for the selected filters.</p>'
+}
+
+function formatCurrencyCompact(value: number) {
+  if (!Number.isFinite(value) || value <= 0) {
+    return 'RM0'
+  }
+
+  return new Intl.NumberFormat('en-MY', {
+    style: 'currency',
+    currency: 'MYR',
+    notation: value >= 10000 ? 'compact' : 'standard',
+    maximumFractionDigits: value >= 10000 ? 1 : 0,
+  }).format(value)
+}
+
+function formatDateLabel(value: string) {
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    return value
+  }
+
+  return parsed.toLocaleDateString('en-MY', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })
 }
 
 

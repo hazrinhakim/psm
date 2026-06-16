@@ -1,0 +1,80 @@
+ICAMS Asset Assignment History Setup
+===================================
+
+Purpose
+-------
+This SQL adds historical tracking for asset-user assignment changes.
+
+Use case:
+- keep current asset assignment clean
+- preserve previous user history even after user deletion
+- support auto-unassign on user removal without losing audit trail
+
+Notes
+-----
+- Run this in Supabase SQL Editor
+- This script is additive
+- It does not remove or rename existing columns such as `assets.user_name`
+
+SQL
+---
+
+create extension if not exists pgcrypto;
+
+create table if not exists public.asset_assignment_history (
+  id uuid primary key default gen_random_uuid(),
+  asset_id uuid not null references public.assets(id) on delete cascade,
+  assigned_user_id uuid references public.profiles(id) on delete set null,
+  assigned_user_name text not null,
+  assigned_at timestamptz not null default timezone('utc', now()),
+  unassigned_at timestamptz,
+  assignment_note text,
+  ended_reason text,
+  started_by uuid references public.profiles(id) on delete set null,
+  ended_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'asset_assignment_history_ended_reason_check'
+  ) then
+    alter table public.asset_assignment_history
+      add constraint asset_assignment_history_ended_reason_check
+      check (
+        ended_reason is null
+        or ended_reason in (
+          'reassigned',
+          'manual_unassign',
+          'user_deleted',
+          'asset_deleted'
+        )
+      );
+  end if;
+end
+$$;
+
+create index if not exists idx_asset_assignment_history_asset_id
+  on public.asset_assignment_history (asset_id);
+
+create index if not exists idx_asset_assignment_history_assigned_user_id
+  on public.asset_assignment_history (assigned_user_id);
+
+create index if not exists idx_asset_assignment_history_assigned_user_name
+  on public.asset_assignment_history (assigned_user_name);
+
+create unique index if not exists idx_asset_assignment_history_active_asset
+  on public.asset_assignment_history (asset_id)
+  where unassigned_at is null;
+
+comment on table public.asset_assignment_history is
+'Historical tracking for asset assignment and unassignment events.';
+
+comment on column public.asset_assignment_history.assigned_user_name is
+'Display name of the assigned user at the time of assignment. Preserved even if the profile is later deleted.';
+
+comment on column public.asset_assignment_history.ended_reason is
+'Reason the assignment ended, such as reassigned, manual_unassign, user_deleted, or asset_deleted.';

@@ -15,6 +15,13 @@ type NotificationItem = {
   read: boolean | null
 }
 
+function cleanNotificationMessage(message?: string | null) {
+  return (message ?? 'No details provided.')
+    .replace(/^\[feedback:[a-f0-9-]+\]\s*/i, '')
+    .replace(/^\[maintenance:[a-f0-9-]+\]\s*/i, '')
+    .replace(/^\[schedule:[a-f0-9-]+\]\[alert:[a-z_]+\]\s*/i, '')
+}
+
 export function NotificationsBell() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [loadingNotifications, setLoadingNotifications] = useState(false)
@@ -168,7 +175,7 @@ export function NotificationsBell() {
       </PopoverTrigger>
       <PopoverContent
         align="end"
-        className="w-80 overflow-hidden rounded-2xl border border-border/70 bg-white/90 p-0 shadow-lg backdrop-blur-xs supports-[backdrop-filter]:bg-white/80 dark:bg-slate-950/80 dark:shadow-black/20 dark:supports-[backdrop-filter]:bg-slate-950/72"
+        className="w-[min(20rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-border/70 bg-white/90 p-0 shadow-lg backdrop-blur-xs supports-[backdrop-filter]:bg-white/80 dark:bg-slate-950/80 dark:shadow-black/20 dark:supports-[backdrop-filter]:bg-slate-950/72 sm:w-80"
       >
         <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
           <span className="text-sm font-medium text-foreground">
@@ -199,10 +206,7 @@ export function NotificationsBell() {
                     {note.type ? `${note.type} update` : 'System update'}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {(note.message ?? 'No details provided.').replace(
-                      /^\[feedback:[a-f0-9-]+\]\s*/i,
-                      ''
-                    )}
+                    {cleanNotificationMessage(note.message)}
                   </p>
                   <p className="mt-2 text-[11px] text-muted-foreground">
                     {note.date

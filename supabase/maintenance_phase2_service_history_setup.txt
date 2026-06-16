@@ -1,0 +1,58 @@
+ICAMS Maintenance Module Enhancement - Phase 2 Service History Setup
+===================================================================
+
+Purpose
+-------
+This SQL extends the maintenance module with richer service completion data:
+
+1. Service completion notes and action summary
+2. Completion checklist storage
+3. Technician / service metadata on timeline updates
+
+Notes
+-----
+- Run this after `supabase/maintenance_phase1_setup.txt`
+- This script is additive and keeps current maintenance flow intact
+- Run in Supabase SQL Editor
+
+SQL
+---
+
+alter table public.maintenance_request_updates
+  add column if not exists checklist_items jsonb,
+  add column if not exists work_summary text,
+  add column if not exists service_outcome text,
+  add column if not exists performed_at timestamptz,
+  add column if not exists estimated_downtime_hours numeric(8,2);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'maintenance_request_updates_service_outcome_check'
+  ) then
+    alter table public.maintenance_request_updates
+      add constraint maintenance_request_updates_service_outcome_check
+      check (
+        service_outcome is null
+        or service_outcome in ('completed', 'partially_completed', 'monitoring_required')
+      );
+  end if;
+end
+$$;
+
+create index if not exists idx_maintenance_request_updates_performed_at
+  on public.maintenance_request_updates (performed_at);
+
+comment on column public.maintenance_request_updates.checklist_items is
+'JSON array of checklist item objects recorded during maintenance completion.';
+
+comment on column public.maintenance_request_updates.work_summary is
+'Plain-language summary of work performed for this maintenance update.';
+
+comment on column public.maintenance_request_updates.service_outcome is
+'Completion outcome such as completed, partially completed, or monitoring_required.';
+
+comment on column public.maintenance_request_updates.performed_at is
+'Timestamp describing when the maintenance work was actually completed.';
