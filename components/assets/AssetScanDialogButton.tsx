@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { QrCode } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -9,9 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogOverlay,
 } from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { AssetScan } from '@/components/scan/AssetScan'
 
 export function AssetScanDialogButton({ basePath }: { basePath: string }) {
@@ -25,19 +24,29 @@ export function AssetScanDialogButton({ basePath }: { basePath: string }) {
           Scan QR
         </Button>
       </DialogTrigger>
-      <DialogOverlay className="bg-black/50 backdrop-blur-xs" />
 
-      <DialogContent className="w-[calc(100vw-1.5rem)] max-w-md border-border bg-background pt-0">
+      <DialogContent className="left-0 top-0 h-dvh w-screen max-w-none translate-x-0 translate-y-0 rounded-none border-0 bg-background p-0 pt-0 sm:left-[50%] sm:top-[50%] sm:h-auto sm:w-[calc(100vw-1.5rem)] sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[1.5rem] sm:border sm:p-0">
         <DialogHeader>
           <DialogTitle className="sr-only">Scan asset QR</DialogTitle>
         </DialogHeader>
-        <ScrollArea>
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 sm:p-0">
           <AssetScan
             scanBasePath={`${basePath}/scan`}
             searchPath={`${basePath}/assets`}
             onScanSuccess={() => setOpen(false)}
           />
-        </ScrollArea>
+          <div className="px-4 pb-4 text-center text-xs text-muted-foreground sm:hidden">
+            Jika preview kamera masih hitam pada telefon anda, buka scanner penuh di{' '}
+            <Link
+              href={`${basePath}/scan`}
+              className="font-medium text-foreground underline underline-offset-4"
+              onClick={() => setOpen(false)}
+            >
+              halaman scan
+            </Link>
+            .
+          </div>
+        </div>
       </DialogContent>
 
     </Dialog>

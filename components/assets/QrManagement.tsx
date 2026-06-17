@@ -262,60 +262,60 @@ export async function QrManagement({
             Review asset info and remove QR codes when needed.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0 overflow-x-hidden">
           {assetsWithQrList.length > 0 ? (
-            <Accordion type="single" collapsible className="w-full">
+            <Accordion type="single" collapsible className="w-full min-w-0">
               {assetsWithQrList.map(asset => {
                 const code = asset.qr_code ?? asset.asset_no ?? asset.id
 
                 return (
-                  <AccordionItem key={asset.id} value={asset.id}>
-                    <AccordionTrigger className="hover:no-underline">
-                      <div className="flex w-full items-center gap-3">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-md border bg-muted/40 text-muted-foreground">
+                  <AccordionItem key={asset.id} value={asset.id} className="min-w-0">
+                    <AccordionTrigger className="min-w-0 gap-3 hover:no-underline">
+                      <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-muted/40 text-muted-foreground">
                           <QrCode className="h-4 w-4" />
                         </span>
-                        <div className="min-w-0 text-left">
-                          <p className="text-sm font-medium truncate">
+                        <div className="min-w-0 flex-1 text-left">
+                          <p className="truncate text-sm font-medium">
                             {asset.asset_name || 'Unnamed asset'}
                           </p>
-                          <p className="text-xs text-muted-foreground truncate">
+                          <p className="truncate text-xs text-muted-foreground">
                             {asset.asset_no ?? code}
                           </p>
                         </div>
                       </div>
                     </AccordionTrigger>
-                    <AccordionContent className="space-y-4">
+                    <AccordionContent className="min-w-0 space-y-4 overflow-x-hidden">
                       <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-xs text-muted-foreground">Asset ID</p>
-                          <p className="font-medium">{asset.asset_no ?? code}</p>
+                          <p className="break-words font-medium">{asset.asset_no ?? code}</p>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-xs text-muted-foreground">Assigned User</p>
-                          <p className="font-medium">
+                          <p className="break-words font-medium">
                             {asset.user_name || 'Unassigned'}
                           </p>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-xs text-muted-foreground">Department</p>
-                          <p className="font-medium">
+                          <p className="break-words font-medium">
                             {asset.department || 'Not set'}
                           </p>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-xs text-muted-foreground">Category</p>
-                          <p className="font-medium">
+                          <p className="break-words font-medium">
                             {getCategoryName(asset)}
                           </p>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-xs text-muted-foreground">QR Code</p>
-                          <p className="font-medium">{code}</p>
+                          <p className="break-all font-medium">{code}</p>
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                         <QrPreviewButton
                           imageUrl={qrImageUrl(code)}
                           code={code}

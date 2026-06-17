@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { CardContent, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import QrScanner from 'qr-scanner'
 
@@ -150,8 +149,8 @@ export function AssetScan({
   return (
     <div className="mx-auto w-full max-w-sm">
       <CardContent className="p-0">
-        <div className="space-y-4 rounded-xl border bg-background p-4">
-          <div className="space-y-1">
+        <div className="space-y-4 p-1 sm:p-4">
+          <div className="space-y-1 px-1 sm:px-0">
             <CardTitle className="text-sm">Scan Asset QR</CardTitle>
             <p className="text-xs text-muted-foreground">
               Use your camera on mobile or tablet, then align the code inside
@@ -159,7 +158,7 @@ export function AssetScan({
             </p>
           </div>
 
-          <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-black">
+          <div className="relative aspect-square w-full overflow-hidden rounded-[1.4rem] bg-black">
             <video
               ref={videoRef}
               className="h-full w-full object-contain"
@@ -171,26 +170,13 @@ export function AssetScan({
                 {startingCamera ? 'Starting camera...' : 'Camera preview'}
               </div>
             )}
-            <div className="pointer-events-none absolute inset-4 rounded-lg border border-dashed border-foreground/20" />
+            <div className="pointer-events-none absolute inset-4 rounded-[1.2rem] border border-dashed border-foreground/20" />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              onClick={startCamera}
-              disabled={cameraActive || startingCamera}
-            >
-              {cameraActive
-                ? 'Camera Active'
-                : startingCamera
-                  ? 'Starting...'
-                  : 'Start Camera'}
-            </Button>
-            {cameraActive && (
-              <Button type="button" variant="outline" onClick={stopCamera}>
-                Stop
-              </Button>
-            )}
+          <div className="px-1 sm:px-0">
+            <p className="text-xs text-muted-foreground">
+              {cameraActive ? 'Camera is live' : startingCamera ? 'Starting camera...' : 'Camera preview'}
+            </p>
           </div>
         </div>
       </CardContent>
