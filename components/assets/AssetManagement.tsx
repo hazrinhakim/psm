@@ -32,6 +32,14 @@ import { AnimatedCount } from '@/components/assets/AnimatedCount'
 import { AssetAssigneeCombobox } from '@/components/assets/AssetAssigneeCombobox'
 import { AssetSelectField } from '@/components/assets/AssetSelectField'
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -63,6 +71,7 @@ type SearchParams = {
   deleted?: string
   error?: string
   q?: string
+  page?: string
 }
 
 type AssetStatus = 'active' | 'inactive'
@@ -210,6 +219,14 @@ function getMaintenancePriorityLabel(value?: string | null) {
   if (normalized === 'high') return 'High'
   if (normalized === 'critical') return 'Critical'
   return 'Medium'
+}
+
+function normalizePageParam(value?: string) {
+  const parsed = Number.parseInt(String(value ?? '1'), 10)
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return 1
+  }
+  return parsed
 }
 
 function getMaintenanceRequestBadgeClass(value?: string | null) {
@@ -670,6 +687,8 @@ export async function AssetManagement({
   }
 
   const query = (searchParams?.q ?? '').trim().toLowerCase()
+  const currentPage = normalizePageParam(searchParams?.page)
+  const pageSize = 12
 
   const supabase = await createSupabaseServerClient()
   const {
@@ -687,14 +706,23 @@ export async function AssetManagement({
   const role = normalizeRole(profile?.role)
   const canManage =
     role === 'admin' || role === 'admin_assistant'
+  const shouldGateResults = canManage && !query
 
-  const { data: assigneeProfiles } = canManage
-    ? await supabase
-        .from('profiles')
-        .select('full_name')
-        .not('full_name', 'is', null)
-        .order('full_name')
-    : { data: [] }
+  const [{ data: assigneeProfiles }, { data: categories }] = await Promise.all([
+    canManage
+      ? supabase
+          .from('profiles')
+          .select('full_name')
+          .not('full_name', 'is', null)
+          .order('full_name')
+      : Promise.resolve({ data: [] }),
+    canManage
+      ? supabase
+          .from('asset_categories')
+          .select('id, name')
+          .order('name')
+      : Promise.resolve({ data: [] }),
+  ])
 
   const assigneeNames = Array.from(
     new Set(
@@ -703,78 +731,155 @@ export async function AssetManagement({
         .filter(Boolean)
     )
   )
-  let assetQuery = supabase
-    .from('assets')
-    .select(
-      `
-      id,
-      asset_no,
-      asset_name,
-      category_id,
-      type,
-      qr_code,
-      year,
-      department,
-      unit,
-      user_name,
-      purchase_date,
-      price,
-      supplier,
-      source,
-      model,
-      serial_no,
-      processor,
-      ram_capacity,
-      hdd_capacity,
-      monitor_model,
-      monitor_serial_no,
-      monitor_asset_no,
-      keyboard_model,
-      keyboard_serial_no,
-      keyboard_asset_no,
-      mouse_model,
-      mouse_serial_no,
-      mouse_asset_no,
-      accessories,
-      maintenance_enabled,
-      maintenance_strategy,
-      maintenance_priority,
-      service_interval_days,
-      last_service_date,
-      next_service_date,
-      warranty_expiry_date,
-      expected_lifespan_years,
-      maintenance_notes,
-      created_at,
-      asset_categories ( name )
-    `
-    )
-    .order('asset_name')
+  const assignee =
+    role === 'staff' ? profile?.full_name?.trim() || user?.email || '' : ''
+  const escapedQuery = query
+    ? query.replace(/[%,]/g, char => `\\${char}`)
+    : ''
+  const assetSearchFilter = query
+    ? [
+        `asset_no.ilike.%${escapedQuery}%`,
+        `asset_name.ilike.%${escapedQuery}%`,
+        `type.ilike.%${escapedQuery}%`,
+        `department.ilike.%${escapedQuery}%`,
+        `unit.ilike.%${escapedQuery}%`,
+        `user_name.ilike.%${escapedQuery}%`,
+      ].join(',')
+    : ''
 
-  if (role === 'staff') {
-    const assignee =
-      profile?.full_name?.trim() || user?.email || ''
-    if (assignee) {
-      assetQuery = assetQuery.eq('user_name', assignee)
-    } else {
-      assetQuery = assetQuery.eq('id', '00000000-0000-0000-0000-000000000000')
+  const applyAssetFilters = <T,>(queryBuilder: T): T => {
+    let nextQuery = queryBuilder as
+      | {
+          eq: (column: string, value: string) => T
+          or: (filters: string) => T
+        }
+      | T
+
+    if (role === 'staff') {
+      if (assignee) {
+        nextQuery = (nextQuery as { eq: (column: string, value: string) => T }).eq(
+          'user_name',
+          assignee
+        )
+      } else {
+        nextQuery = (nextQuery as { eq: (column: string, value: string) => T }).eq(
+          'id',
+          '00000000-0000-0000-0000-000000000000'
+        )
+      }
     }
+
+    if (assetSearchFilter) {
+      nextQuery = (nextQuery as { or: (filters: string) => T }).or(
+        assetSearchFilter
+      )
+    }
+
+    return nextQuery as T
   }
 
-  const { data: assets } = await assetQuery
-  const assetsList = (assets ?? []) as Asset[]
-  const assetIds = assetsList.map(asset => asset.id)
+  const fromIndex = (currentPage - 1) * pageSize
+  const toIndex = fromIndex + pageSize - 1
 
-  const { data: maintenanceHistoryRows } =
-    assetIds.length > 0
-      ? await supabase
-          .from('maintenance_requests')
-          .select(
-            'id, asset_id, title, status, request_type, due_date, resolved_at, updated_at, resolution_summary'
-          )
-          .in('asset_id', assetIds)
-          .order('updated_at', { ascending: false })
-      : { data: [] }
+  const [{ count: totalMatchingAssets }, { data: assetTypes }, { data: assets }] =
+    shouldGateResults
+      ? [{ count: 0 }, { data: [] }, { data: [] }]
+      : await Promise.all([
+          applyAssetFilters(
+            supabase.from('assets').select('id', { count: 'exact', head: true })
+          ),
+          applyAssetFilters(
+            supabase.from('assets').select('type')
+          ),
+          applyAssetFilters(
+            supabase
+              .from('assets')
+              .select(
+                `
+                id,
+                asset_no,
+                asset_name,
+                category_id,
+                type,
+                qr_code,
+                year,
+                department,
+                unit,
+                user_name,
+                purchase_date,
+                price,
+                supplier,
+                source,
+                model,
+                serial_no,
+                processor,
+                ram_capacity,
+                hdd_capacity,
+                monitor_model,
+                monitor_serial_no,
+                monitor_asset_no,
+                keyboard_model,
+                keyboard_serial_no,
+                keyboard_asset_no,
+                mouse_model,
+                mouse_serial_no,
+                mouse_asset_no,
+                accessories,
+                maintenance_enabled,
+                maintenance_strategy,
+                maintenance_priority,
+                service_interval_days,
+                last_service_date,
+                next_service_date,
+                warranty_expiry_date,
+                expected_lifespan_years,
+                maintenance_notes,
+                created_at,
+                asset_categories ( name )
+              `
+              )
+              .order('asset_name')
+              .range(fromIndex, toIndex)
+          ),
+        ])
+
+  const assetsList = (assets ?? []) as Asset[]
+
+  const filteredAssets = shouldGateResults ? [] : assetsList
+  const visibleAssetIds = filteredAssets.map(asset => asset.id)
+  const totalPages = Math.max(1, Math.ceil((totalMatchingAssets ?? 0) / pageSize))
+
+  const pageHref = (page: number) => {
+    const params = new URLSearchParams()
+    if (query) {
+      params.set('q', query)
+    }
+    if (page > 1) {
+      params.set('page', String(page))
+    }
+    const queryString = params.toString()
+    return queryString ? `${basePath}/assets?${queryString}` : `${basePath}/assets`
+  }
+
+  const [{ data: maintenanceHistoryRows }, { data: assignmentHistoryRows }] =
+    visibleAssetIds.length > 0
+      ? await Promise.all([
+          supabase
+            .from('maintenance_requests')
+            .select(
+              'id, asset_id, title, status, request_type, due_date, resolved_at, updated_at, resolution_summary'
+            )
+            .in('asset_id', visibleAssetIds)
+            .order('updated_at', { ascending: false }),
+          supabase
+            .from('asset_assignment_history')
+            .select(
+              'id, asset_id, assigned_user_name, assigned_at, unassigned_at, ended_reason'
+            )
+            .in('asset_id', visibleAssetIds)
+            .order('assigned_at', { ascending: false }),
+        ])
+      : [{ data: [] }, { data: [] }]
 
   const maintenanceHistoryByAssetId = (maintenanceHistoryRows ?? []).reduce<
     Record<string, MaintenanceHistoryEntry[]>
@@ -801,17 +906,6 @@ export async function AssetManagement({
     return acc
   }, {})
 
-  const { data: assignmentHistoryRows } =
-    assetIds.length > 0
-      ? await supabase
-          .from('asset_assignment_history')
-          .select(
-            'id, asset_id, assigned_user_name, assigned_at, unassigned_at, ended_reason'
-          )
-          .in('asset_id', assetIds)
-          .order('assigned_at', { ascending: false })
-      : { data: [] }
-
   const assignmentHistoryByAssetId = (assignmentHistoryRows ?? []).reduce<
     Record<string, AssignmentHistoryEntry[]>
   >((acc, row) => {
@@ -833,40 +927,12 @@ export async function AssetManagement({
     return acc
   }, {})
 
-  const { data: categories } = canManage
-    ? await supabase
-        .from('asset_categories')
-        .select('id, name')
-        .order('name')
-    : { data: [] }
-
-  const shouldGateResults = canManage && !query
-  const filteredAssets = shouldGateResults
-    ? []
-    : query
-      ? assetsList.filter(asset => {
-          const haystack = [
-            asset.asset_no,
-            asset.asset_name,
-            asset.type,
-            asset.department,
-            asset.unit,
-            asset.user_name,
-            getCategoryName(asset),
-          ]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase()
-          return haystack.includes(query)
-        })
-      : assetsList
-
   const assetTypeSummaries = [
     { label: 'Computer', icon: Monitor, color: 'from-blue-400 to-blue-300' },
     { label: 'Laptop', icon: Laptop, color: 'from-emerald-400 to-emerald-300' },
     { label: 'Printer', icon: Printer, color: 'from-amber-400 to-amber-300' },
   ].map(({ label, icon, color }) => {
-    const matches = assetsList.filter(asset => {
+    const matches = ((assetTypes ?? []) as Array<{ type?: string | null }>).filter(asset => {
       const type = String(asset.type ?? '').trim().toLowerCase()
       return type === label.toLowerCase()
     })
@@ -1985,6 +2051,67 @@ export async function AssetManagement({
           )
         })}
       </div>
+
+      {!shouldGateResults && totalPages > 1 && (
+        <div className="flex flex-col gap-4 pt-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="order-2 text-sm text-muted-foreground sm:order-1">
+            Page <span className="font-medium">{currentPage}</span> of{' '}
+            <span className="font-medium">{totalPages}</span>
+          </p>
+          <Pagination className="order-1 mx-0 w-auto sm:order-2">
+            <PaginationContent className="gap-2">
+              <PaginationItem>
+                <PaginationPrevious
+                  href={pageHref(Math.max(1, currentPage - 1))}
+                  className={`rounded-md border transition-colors hover:bg-muted ${
+                    currentPage === 1 ? 'pointer-events-none opacity-50' : ''
+                  }`}
+                />
+              </PaginationItem>
+
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum = i + 1
+                if (totalPages > 5) {
+                  if (currentPage <= 3) {
+                    pageNum = i + 1
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i
+                  } else {
+                    pageNum = currentPage - 2 + i
+                  }
+                }
+
+                return (
+                  <PaginationItem key={pageNum}>
+                    <PaginationLink
+                      href={pageHref(pageNum)}
+                      isActive={pageNum === currentPage}
+                      className={`rounded-md border transition-colors ${
+                        pageNum === currentPage
+                          ? 'border-foreground bg-foreground text-background'
+                          : 'hover:bg-muted'
+                      }`}
+                    >
+                      {pageNum}
+                    </PaginationLink>
+                  </PaginationItem>
+                )
+              })}
+
+              <PaginationItem>
+                <PaginationNext
+                  href={pageHref(Math.min(totalPages, currentPage + 1))}
+                  className={`rounded-md border transition-colors hover:bg-muted ${
+                    currentPage === totalPages
+                      ? 'pointer-events-none opacity-50'
+                      : ''
+                  }`}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   )
 }

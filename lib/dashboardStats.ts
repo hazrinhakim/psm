@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from './supabaseServer'
+import { getCurrentUserContext } from './currentUser'
 
 type DashboardScope = 'all' | 'assigned'
 
@@ -15,19 +15,7 @@ type RawRecentMaintenanceItem = {
 }
 
 export async function getDashboardStats(scope: DashboardScope = 'all') {
-  const supabase = await createSupabaseServerClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const { data: profile } = user
-    ? await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .maybeSingle()
-    : { data: null }
+  const { supabase, user, profile } = await getCurrentUserContext()
 
   const isScoped = scope === 'assigned'
   const assignee = profile?.full_name?.trim()
@@ -40,14 +28,12 @@ export async function getDashboardStats(scope: DashboardScope = 'all') {
   if (isScoped) {
     totalAssetsQuery = totalAssetsQuery.eq('user_name', assigneeMatch)
   }
-  const { count: totalAssets } = await totalAssetsQuery
-
-  const { count: activeAssets } = isScoped
-    ? await supabase
+  const activeAssetsQuery = isScoped
+    ? supabase
         .from('assets')
         .select('id', { count: 'exact', head: true })
         .eq('user_name', assigneeMatch)
-    : await supabase
+    : supabase
         .from('assets')
         .select('id', { count: 'exact', head: true })
         .not('user_name', 'is', null)
@@ -60,7 +46,6 @@ export async function getDashboardStats(scope: DashboardScope = 'all') {
   if (isScoped) {
     pendingMaintenanceQuery = pendingMaintenanceQuery.eq('requested_by', userId)
   }
-  const { count: pendingMaintenance } = await pendingMaintenanceQuery
 
   let inProgressMaintenanceQuery = supabase
     .from('maintenance_requests')
@@ -72,7 +57,6 @@ export async function getDashboardStats(scope: DashboardScope = 'all') {
       userId
     )
   }
-  const { count: inProgressMaintenance } = await inProgressMaintenanceQuery
 
   let completedMaintenanceQuery = supabase
     .from('maintenance_requests')
@@ -84,14 +68,6 @@ export async function getDashboardStats(scope: DashboardScope = 'all') {
       userId
     )
   }
-  const { count: completedMaintenance } = await completedMaintenanceQuery
-
-  const { count: feedbackCount } = await supabase
-    .from('notifications')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('type', 'general')
-    .eq('read', false)
 
   let recentMaintenanceQuery = supabase
     .from('maintenance_requests')
@@ -110,7 +86,29 @@ export async function getDashboardStats(scope: DashboardScope = 'all') {
   if (isScoped) {
     recentMaintenanceQuery = recentMaintenanceQuery.eq('requested_by', userId)
   }
-  const { data: recentMaintenance } = await recentMaintenanceQuery
+
+  const [
+    { count: totalAssets },
+    { count: activeAssets },
+    { count: pendingMaintenance },
+    { count: inProgressMaintenance },
+    { count: completedMaintenance },
+    { count: feedbackCount },
+    { data: recentMaintenance },
+  ] = await Promise.all([
+    totalAssetsQuery,
+    activeAssetsQuery,
+    pendingMaintenanceQuery,
+    inProgressMaintenanceQuery,
+    completedMaintenanceQuery,
+    supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('type', 'general')
+      .eq('read', false),
+    recentMaintenanceQuery,
+  ])
 
   const normalizedRecentMaintenance = (
     (recentMaintenance ?? []) as RawRecentMaintenanceItem[]

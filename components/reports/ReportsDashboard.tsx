@@ -92,6 +92,7 @@ export function ReportsDashboard({
   initialFilters,
   initialReport,
 }: ReportsDashboardProps) {
+  const hasHydratedInitialReportRef = React.useRef(false)
   const [filters, setFilters] =
     React.useState<CustomAssetReportFilters>(initialFilters)
   const [report, setReport] =
@@ -101,6 +102,11 @@ export function ReportsDashboard({
   const deferredFilters = React.useDeferredValue(filters)
 
   React.useEffect(() => {
+    if (!hasHydratedInitialReportRef.current) {
+      hasHydratedInitialReportRef.current = true
+      return
+    }
+
     const controller = new AbortController()
     const query = buildQueryString(deferredFilters)
 

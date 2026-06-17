@@ -19,9 +19,9 @@ import { SonnerNotifier } from '@/components/ui/sonner-notifier'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 import { AnimatedCount } from '@/components/assets/AnimatedCount'
 import { MaintenanceFilterForm } from '@/components/maintenance/MaintenanceFilterForm'
+import { MaintenanceSchedulerTrigger } from '@/components/maintenance/MaintenanceSchedulerTrigger'
 import { MaintenanceUpdateForm } from '@/components/maintenance/MaintenanceUpdateForm'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ensurePreventiveMaintenanceRequests } from '@/lib/maintenanceActions'
 import {
   Wrench,
   ClipboardList,
@@ -316,7 +316,6 @@ export async function MaintenanceList({
   const selectedRequestType = normalizeRequestTypeParam(requestTypeParam)
   const urgencyParam = getParamValue(searchParams?.urgency)
   const selectedUrgency = normalizeUrgencyParam(urgencyParam)
-  await ensurePreventiveMaintenanceRequests()
 
   const supabase = await createSupabaseServerClient()
 
@@ -488,6 +487,7 @@ export async function MaintenanceList({
 
   return (
     <div className="space-y-6 p-1">
+      <MaintenanceSchedulerTrigger />
       <div className="space-y-2">
         <h2 className="text-2xl font-semibold tracking-tight">
           Maintenance Request Management

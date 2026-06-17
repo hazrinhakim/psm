@@ -3,8 +3,7 @@ import { Sidebar } from '@/components/dashboard/Sidebar'
 import { SiteHeader } from '@/components/dashboard/SiteHeader'
 import { PageTransition } from '@/components/ui/page-transition'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { createSupabaseServerClient } from '@/lib/supabaseServer'
-import { normalizeRole, roleToPath } from '@/lib/roles'
+import { getCurrentUserContext } from '@/lib/currentUser'
 import type { ReactNode } from 'react'
 
 export default async function AdminLayout({
@@ -12,25 +11,11 @@ export default async function AdminLayout({
 }: {
   children: ReactNode
 }) {
-  const supabase = await createSupabaseServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const { data } = user
-    ? await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle()
-    : { data: null }
-
-  const role = normalizeRole(data?.role)
-  const basePath = roleToPath(role)
+  const { role, basePath, profileName } = await getCurrentUserContext()
 
   return (
     <SidebarProvider className="bg-muted/50">
-      <Sidebar basePath={basePath} role={role} />
+      <Sidebar basePath={basePath} role={role} profileName={profileName} />
       <SidebarInset className="bg-sidebar p-3">
         <div className="flex min-h-[calc(100svh-1rem)] flex-1 flex-col rounded-xl border bg-card shadow-sm">
           <SiteHeader />

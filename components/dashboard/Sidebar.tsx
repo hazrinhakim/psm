@@ -3,7 +3,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
 import {
   LayoutDashboard,
   Wrench,
@@ -30,7 +29,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { supabase } from '@/lib/supabaseClient'
-import { getUserSafely, navigateAfterAuthChange } from '@/lib/supabaseAuth'
+import { navigateAfterAuthChange } from '@/lib/supabaseAuth'
 
 import type { LucideIcon } from 'lucide-react'
 
@@ -86,51 +85,16 @@ const badgeClassMap: Record<string, string> = {
 export function Sidebar({
   basePath,
   role,
+  profileName,
 }: {
   basePath: string
   role: UserRole
+  profileName: string
 }) {
   const pathname = usePathname()
   const menu = menus[role] ?? menus.staff
-  const [profileName, setProfileName] = useState<string>('User')
-  const [profileRole, setProfileRole] = useState<string>(role)
-  const portalLabel = badgeLabelMap[profileRole] ?? 'Staff'
-  const portalClass = badgeClassMap[profileRole] ?? badgeClassMap.staff
-
-  useEffect(() => {
-    let isActive = true
-
-    const loadProfile = async () => {
-      try {
-        const {
-          data: { user },
-        } = await getUserSafely()
-
-        if (!user) {
-          return
-        }
-
-        const { data } = await supabase
-          .from('profiles')
-          .select('full_name, role')
-          .eq('id', user.id)
-          .maybeSingle()
-
-        if (isActive) {
-          setProfileName(data?.full_name ?? user.email ?? 'User')
-          setProfileRole(data?.role ?? role)
-        }
-      } catch (err) {
-        console.error('Failed to load profile:', err)
-      }
-    }
-
-    void loadProfile()
-
-    return () => {
-      isActive = false
-    }
-  }, [role])
+  const portalLabel = badgeLabelMap[role] ?? 'Staff'
+  const portalClass = badgeClassMap[role] ?? badgeClassMap.staff
 
   const logout = async () => {
     await supabase.auth.signOut()
@@ -194,7 +158,7 @@ export function Sidebar({
               {profileName}
             </p>
             <p className="text-xs capitalize text-muted-foreground">
-              {profileRole.replace('_', ' ')}
+              {role.replace('_', ' ')}
             </p>
           </div>
         </div>
