@@ -33,6 +33,7 @@ import {
   QrDeleteConfirmButton,
   QrDownloadButton,
   QrGenerateButton,
+  QrPreviewButton,
 } from '@/components/assets/QrButtons'
 
 type SearchParams = {
@@ -315,6 +316,11 @@ export async function QrManagement({
                       </div>
 
                       <div className="flex flex-wrap gap-2">
+                        <QrPreviewButton
+                          imageUrl={qrImageUrl(code)}
+                          code={code}
+                          assetName={asset.asset_name ?? asset.asset_no ?? 'Selected asset'}
+                        />
                         <QrDownloadButton href={qrDownloadUrl(code)} />
                         <Dialog>
                           <DialogTrigger asChild>

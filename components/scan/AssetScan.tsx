@@ -17,6 +17,7 @@ export function AssetScan({
   onScanSuccess?: () => void
 }) {
   const [cameraActive, setCameraActive] = useState(false)
+  const [startingCamera, setStartingCamera] = useState(false)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const scannerRef = useRef<QrScanner | null>(null)
   const workerReadyRef = useRef(false)
@@ -57,57 +58,86 @@ export function AssetScan({
   )
 
   const startCamera = useCallback(async () => {
-    if (cameraActive) {
+    if (cameraActive || startingCamera) {
       return
     }
     if (!videoRef.current) {
       return
     }
 
-    const hasCamera = await QrScanner.hasCamera()
-    if (!hasCamera) {
-      toast.info('No camera detected on this device.')
-      return
-    }
-
-    if (!workerReadyRef.current) {
-      QrScanner.WORKER_PATH = '/qr-scanner-worker.min.js'
-      workerReadyRef.current = true
-    }
-
-    if (!scannerRef.current) {
-      scannerRef.current = new QrScanner(
-        videoRef.current,
-        result => {
-          let raw = ''
-          if (typeof result === 'string') {
-            raw = result
-          } else if (result && typeof result === 'object' && 'data' in result) {
-            raw = String((result as { data?: unknown }).data ?? '')
-          }
-          const value = raw.trim()
-          if (value) {
-            goToResult(value)
-          }
-        },
-        {
-          preferredCamera: 'environment',
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-          returnDetailedScanResult: true,
-          onDecodeError: () => {},
-        }
-      )
-    }
+    setStartingCamera(true)
 
     try {
+      const hasCamera = await QrScanner.hasCamera()
+      if (!hasCamera) {
+        toast.info('No camera detected on this device.')
+        return
+      }
+
+      if (!workerReadyRef.current) {
+        QrScanner.WORKER_PATH = '/qr-scanner-worker.min.js'
+        workerReadyRef.current = true
+      }
+
+      if (!scannerRef.current) {
+        scannerRef.current = new QrScanner(
+          videoRef.current,
+          result => {
+            let raw = ''
+            if (typeof result === 'string') {
+              raw = result
+            } else if (
+              result &&
+              typeof result === 'object' &&
+              'data' in result
+            ) {
+              raw = String((result as { data?: unknown }).data ?? '')
+            }
+            const value = raw.trim()
+            if (value) {
+              goToResult(value)
+            }
+          },
+          {
+            preferredCamera: 'environment',
+            highlightScanRegion: true,
+            highlightCodeOutline: true,
+            returnDetailedScanResult: true,
+            maxScansPerSecond: 12,
+            calculateScanRegion: video => {
+              const smallestDimension = Math.min(
+                video.videoWidth || video.clientWidth || 0,
+                video.videoHeight || video.clientHeight || 0
+              )
+              const regionSize = Math.max(Math.floor(smallestDimension * 0.72), 220)
+
+              return {
+                x: Math.floor(((video.videoWidth || video.clientWidth) - regionSize) / 2),
+                y: Math.floor(((video.videoHeight || video.clientHeight) - regionSize) / 2),
+                width: regionSize,
+                height: regionSize,
+                downScaledWidth: 900,
+                downScaledHeight: 900,
+              }
+            },
+            onDecodeError: () => {},
+          }
+        )
+      }
+
       await scannerRef.current.start()
       setCameraActive(true)
     } catch {
       toast.error('Camera access was blocked. Please allow permission.')
       stopCamera()
+    } finally {
+      setStartingCamera(false)
     }
-  }, [cameraActive, goToResult, stopCamera])
+  }, [cameraActive, goToResult, startingCamera, stopCamera])
+
+  useEffect(() => {
+    void startCamera()
+  }, [startCamera])
 
   useEffect(() => {
     return () => {
@@ -129,24 +159,32 @@ export function AssetScan({
             </p>
           </div>
 
-          <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-muted/30">
+          <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-black">
             <video
               ref={videoRef}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain"
               muted
               playsInline
             />
             {!cameraActive && (
               <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-                Camera preview
+                {startingCamera ? 'Starting camera...' : 'Camera preview'}
               </div>
             )}
             <div className="pointer-events-none absolute inset-4 rounded-lg border border-dashed border-foreground/20" />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" onClick={startCamera} disabled={cameraActive}>
-              {cameraActive ? 'Camera Active' : 'Start Camera'}
+            <Button
+              type="button"
+              onClick={startCamera}
+              disabled={cameraActive || startingCamera}
+            >
+              {cameraActive
+                ? 'Camera Active'
+                : startingCamera
+                  ? 'Starting...'
+                  : 'Start Camera'}
             </Button>
             {cameraActive && (
               <Button type="button" variant="outline" onClick={stopCamera}>

@@ -2,9 +2,17 @@
 
 import { useState } from "react"
 import { useFormStatus } from "react-dom"
-import { Search, Trash2 } from "lucide-react"
+import { Eye, Search, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Spinner } from "@/components/ui/spinner"
 
 type QrClearButtonProps = {
@@ -16,6 +24,12 @@ type QrDownloadButtonProps = {
   label?: string
   size?: "default" | "sm" | "lg" | "xs" | "icon" | "icon-xs" | "icon-sm" | "icon-lg"
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+}
+
+type QrPreviewButtonProps = {
+  imageUrl: string
+  code: string
+  assetName?: string
 }
 
 export function QrSearchButton({ disabled }: { disabled?: boolean }) {
@@ -94,6 +108,41 @@ export function QrDownloadButton({
       {loading ? <Spinner className="mr-2" /> : null}
       {label}
     </Button>
+  )
+}
+
+export function QrPreviewButton({
+  imageUrl,
+  code,
+  assetName,
+}: QrPreviewButtonProps) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button type="button" size="sm" variant="outline">
+          <Eye className="mr-2 h-4 w-4" />
+          View QR
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>QR Code Preview</DialogTitle>
+          <DialogDescription>
+            {assetName || "Selected asset"}{code ? ` · ${code}` : ""}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col items-center gap-4">
+          <img
+            src={imageUrl}
+            alt={`QR code for ${assetName || code}`}
+            className="h-72 w-72 max-w-full rounded-xl border bg-white p-3 object-contain"
+          />
+          <div className="w-full rounded-lg border bg-muted/20 px-4 py-3 text-center text-sm font-medium break-all">
+            {code}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
