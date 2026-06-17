@@ -209,7 +209,7 @@ export function ReportsDashboard({
       ) : null}
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="scrollbar-hidden flex h-auto w-full min-w-0 justify-start snap-x snap-mandatory gap-1 overflow-x-auto rounded-2xl border border-border/70 bg-muted/30 p-1 sm:flex-wrap sm:overflow-visible">
+        <TabsList className="scrollbar-hidden flex h-auto w-full min-w-0 justify-start snap-x snap-mandatory gap-1 overflow-x-auto overflow-y-hidden rounded-2xl border border-border/70 bg-muted/30 p-1 touch-pan-x sm:flex-wrap sm:overflow-visible">
           <TabsTrigger value="overview" className="min-w-[116px] snap-start flex-none sm:min-w-0 sm:flex-1">
             Overview
           </TabsTrigger>

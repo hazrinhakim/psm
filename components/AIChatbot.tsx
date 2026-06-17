@@ -18,6 +18,36 @@ type ChatbotApiResponse = {
   error?: string
 }
 
+function getReadableChatbotError(raw?: string) {
+  if (!raw) {
+    return 'AI assistant is unavailable right now. Please try again in a moment.'
+  }
+
+  const normalized = raw.toLowerCase()
+
+  if (
+    normalized.includes('503') ||
+    normalized.includes('unavailable') ||
+    normalized.includes('high demand')
+  ) {
+    return 'AI assistant is currently busy due to high demand. Please try again in a moment.'
+  }
+
+  if (normalized.includes('unauthorized')) {
+    return 'Your session has expired. Please sign in again and retry.'
+  }
+
+  if (normalized.includes('message is required')) {
+    return 'Please enter a message before sending.'
+  }
+
+  if (normalized.includes('api key') || normalized.includes('not configured')) {
+    return 'AI assistant is not configured properly on this deployment.'
+  }
+
+  return raw
+}
+
 function renderChatbotMessage(content: string) {
   const lines = content
     .replace(/\r\n/g, '\n')
@@ -123,9 +153,11 @@ export function AIChatbot() {
       ])
     } catch (requestError) {
       setError(
-        requestError instanceof Error
-          ? requestError.message
-          : 'Failed to get AI response.'
+        getReadableChatbotError(
+          requestError instanceof Error
+            ? requestError.message
+            : 'Failed to get AI response.'
+        )
       )
     } finally {
       setLoading(false)
@@ -145,11 +177,17 @@ export function AIChatbot() {
                 key={entry.id}
                 className={
                   entry.role === 'bot'
-                    ? 'mr-2 rounded-3xl border border-border/70 bg-background/85 p-4 backdrop-blur-sm sm:mr-8'
-                    : 'ml-2 rounded-3xl border border-blue-200/70 bg-blue-50/75 p-4 backdrop-blur-sm sm:ml-8'
+                    ? 'mr-2 rounded-3xl border border-border/70 bg-background/85 p-4 backdrop-blur-sm sm:mr-8 dark:border-white/10 dark:bg-white/5'
+                    : 'ml-2 rounded-3xl border border-sky-200/80 bg-sky-100/90 p-4 text-sky-950 backdrop-blur-sm sm:ml-8 dark:border-[rgba(56,189,248,0.28)] dark:bg-[rgba(14,116,144,0.28)] dark:text-sky-50'
                 }
               >
-                <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <div
+                  className={
+                    entry.role === 'bot'
+                      ? 'mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground'
+                      : 'mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-[rgba(186,230,253,0.82)]'
+                  }
+                >
                   {entry.role === 'bot' ? (
                     <Bot className="h-3.5 w-3.5" />
                   ) : (
