@@ -1,11 +1,11 @@
 import type { createSupabaseServerClient } from '@/lib/supabaseServer'
 
 export type AssetReportPeriod =
-  | 'all-time'
-  | 'monthly'
-  | 'quarterly'
-  | 'half-yearly'
-  | 'yearly'
+  | 'one-month'
+  | 'three-month'
+  | 'six-month'
+  | 'one-year'
+  | 'three-year'
 
 export type AssetReportFilterOption = {
   value: string
@@ -142,15 +142,15 @@ type AssetRow = {
 }
 
 const PERIOD_LABELS: Record<AssetReportPeriod, string> = {
-  'all-time': 'All Time',
-  monthly: 'Monthly',
-  quarterly: 'Quarterly',
-  'half-yearly': 'Half-yearly',
-  yearly: 'Yearly',
+  'one-month': '1 Month',
+  'three-month': '3 Months',
+  'six-month': '6 Months',
+  'one-year': '1 Year',
+  'three-year': '3 Years',
 }
 
 export function getDefaultAssetReportFilters(
-  period: AssetReportPeriod = 'all-time'
+  period: AssetReportPeriod = 'three-year'
 ): CustomAssetReportFilters {
   const range = getDateRangeForPeriod(period)
 
@@ -205,19 +205,20 @@ export function getDateRangeForPeriod(
   )
   const start = new Date(end)
 
-  if (period === 'all-time') {
-    start.setFullYear(2000, 0, 1)
-  } else if (period === 'monthly') {
+  if (period === 'one-month') {
     start.setMonth(start.getMonth() - 1)
     start.setDate(start.getDate() + 1)
-  } else if (period === 'quarterly') {
+  } else if (period === 'three-month') {
     start.setMonth(start.getMonth() - 3)
     start.setDate(start.getDate() + 1)
-  } else if (period === 'half-yearly') {
+  } else if (period === 'six-month') {
     start.setMonth(start.getMonth() - 6)
     start.setDate(start.getDate() + 1)
-  } else {
+  } else if (period === 'one-year') {
     start.setFullYear(start.getFullYear() - 1)
+    start.setDate(start.getDate() + 1)
+  } else {
+    start.setFullYear(start.getFullYear() - 3)
     start.setDate(start.getDate() + 1)
   }
 
@@ -339,7 +340,7 @@ export async function buildCustomAssetReport(
     }
 
     const bucketKey =
-      filters.period === 'monthly' ? assetDate : assetDate.slice(0, 7)
+      filters.period === 'one-month' ? assetDate : assetDate.slice(0, 7)
     const bucket = timelineBuckets.get(bucketKey)
     if (bucket) {
       bucket.count += 1
@@ -359,7 +360,7 @@ export async function buildCustomAssetReport(
       periodLabel: PERIOD_LABELS[filters.period],
       startLabel: formatDateLabel(filters.startDate),
       endLabel: formatDateLabel(filters.endDate),
-      timelineGranularity: filters.period === 'monthly' ? 'day' : 'month',
+      timelineGranularity: filters.period === 'one-month' ? 'day' : 'month',
     },
     summary: {
       totalAssets,
@@ -779,16 +780,22 @@ export async function buildCustomAssetReportExcel(
 
 function normalizePeriod(period?: string | null): AssetReportPeriod {
   if (
-    period === 'all-time' ||
-    period === 'monthly' ||
-    period === 'quarterly' ||
-    period === 'half-yearly' ||
-    period === 'yearly'
+    period === 'one-month' ||
+    period === 'three-month' ||
+    period === 'six-month' ||
+    period === 'one-year' ||
+    period === 'three-year'
   ) {
     return period
   }
 
-  return 'yearly'
+  if (period === 'monthly') return 'one-month'
+  if (period === 'quarterly') return 'three-month'
+  if (period === 'half-yearly') return 'six-month'
+  if (period === 'yearly') return 'one-year'
+  if (period === 'all-time') return 'three-year'
+
+  return 'three-year'
 }
 
 function normalizeStringList(values?: string[]) {
@@ -839,7 +846,7 @@ function createTimelineBuckets(filters: CustomAssetReportFilters) {
   const start = new Date(filters.startDate)
   const end = new Date(filters.endDate)
 
-  if (filters.period === 'monthly') {
+  if (filters.period === 'one-month') {
     for (
       const cursor = new Date(start);
       cursor <= end;

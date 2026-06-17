@@ -747,11 +747,10 @@ export async function AssetManagement({
       ].join(',')
     : ''
 
-  const applyAssetFilters = <T,>(queryBuilder: T): T => {
+  const applyAssetScopeFilters = <T,>(queryBuilder: T): T => {
     let nextQuery = queryBuilder as
       | {
           eq: (column: string, value: string) => T
-          or: (filters: string) => T
         }
       | T
 
@@ -769,6 +768,16 @@ export async function AssetManagement({
       }
     }
 
+    return nextQuery as T
+  }
+
+  const applyAssetFilters = <T,>(queryBuilder: T): T => {
+    let nextQuery = applyAssetScopeFilters(queryBuilder) as
+      | {
+          or: (filters: string) => T
+        }
+      | T
+
     if (assetSearchFilter) {
       nextQuery = (nextQuery as { or: (filters: string) => T }).or(
         assetSearchFilter
@@ -781,17 +790,19 @@ export async function AssetManagement({
   const fromIndex = (currentPage - 1) * pageSize
   const toIndex = fromIndex + pageSize - 1
 
-  const [{ count: totalMatchingAssets }, { data: assetTypes }, { data: assets }] =
-    shouldGateResults
-      ? [{ count: 0 }, { data: [] }, { data: [] }]
-      : await Promise.all([
-          applyAssetFilters(
+  const [{ data: assetTypes }, { count: totalMatchingAssets }, { data: assets }] =
+    await Promise.all([
+      applyAssetScopeFilters(
+        supabase.from('assets').select('type')
+      ),
+      shouldGateResults
+        ? Promise.resolve({ count: 0 })
+        : applyAssetFilters(
             supabase.from('assets').select('id', { count: 'exact', head: true })
           ),
-          applyAssetFilters(
-            supabase.from('assets').select('type')
-          ),
-          applyAssetFilters(
+      shouldGateResults
+        ? Promise.resolve({ data: [] })
+        : applyAssetFilters(
             supabase
               .from('assets')
               .select(
@@ -841,7 +852,7 @@ export async function AssetManagement({
               .order('asset_name')
               .range(fromIndex, toIndex)
           ),
-        ])
+    ])
 
   const assetsList = (assets ?? []) as Asset[]
 

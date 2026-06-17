@@ -15,6 +15,7 @@ export function renderAssetReportPrintDocument(
     label,
     value: report.charts.timeline.data[index] ?? 0,
   }))
+  const activeTimelineRows = timelineRows.filter(row => row.value > 0)
   const typeRows = report.charts.typeDistribution.labels.map((label, index) => ({
     label,
     value: report.charts.typeDistribution.data[index] ?? 0,
@@ -28,7 +29,7 @@ export function renderAssetReportPrintDocument(
   const topType = typeRows[0]
   const topCategory = categoryRows[0]
   const topHighRiskAssets = report.insights.highRiskAssets.slice(0, 5)
-  const peakTimeline = timelineRows.reduce<PrintRow | null>((best, row) => {
+  const peakTimeline = activeTimelineRows.reduce<PrintRow | null>((best, row) => {
     if (!best || row.value > best.value) {
       return row
     }
@@ -43,14 +44,16 @@ export function renderAssetReportPrintDocument(
     <title>Custom Asset Report</title>
     <style>
       :root {
-        --ink: #0f172a;
-        --muted: #475569;
-        --border: #dbe4f0;
-        --panel: #f8fafc;
-        --panel-strong: #e2e8f0;
-        --accent: #0f766e;
-        --accent-alt: #2563eb;
-        --accent-warm: #d97706;
+        --ink: #111111;
+        --muted: #4b5563;
+        --border: #d4d4d8;
+        --border-strong: #a1a1aa;
+        --panel: #fafafa;
+        --panel-strong: #e4e4e7;
+        --panel-soft: #f4f4f5;
+        --accent: #111111;
+        --accent-alt: #3f3f46;
+        --accent-warm: #52525b;
       }
 
       * { box-sizing: border-box; }
@@ -67,31 +70,31 @@ export function renderAssetReportPrintDocument(
         width: 100%;
         max-width: 1120px;
         margin: 0 auto;
-        padding: 36px;
+        padding: 28px;
       }
 
       .header {
         display: flex;
         justify-content: space-between;
-        gap: 24px;
+        gap: 18px;
         align-items: flex-start;
-        border-bottom: 2px solid var(--panel-strong);
-        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border-strong);
+        padding-bottom: 16px;
       }
 
       .brand {
         display: flex;
-        gap: 16px;
+        gap: 12px;
         align-items: center;
-        margin-bottom: 14px;
+        margin-bottom: 10px;
       }
 
       .brand-mark {
-        width: 64px;
-        height: 64px;
+        width: 52px;
+        height: 52px;
         object-fit: contain;
-        border-radius: 18px;
-        padding: 8px;
+        border-radius: 14px;
+        padding: 6px;
         border: 1px solid var(--border);
         background: white;
       }
@@ -99,55 +102,55 @@ export function renderAssetReportPrintDocument(
       .brand-copy { min-width: 0; }
       .brand-name {
         margin: 0;
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 700;
         line-height: 1.15;
       }
 
       .brand-subtitle {
-        margin: 6px 0 0;
+        margin: 4px 0 0;
         color: var(--muted);
-        font-size: 13px;
+        font-size: 12px;
       }
 
       .eyebrow {
-        margin: 0 0 8px;
-        color: var(--accent);
-        font-size: 12px;
+        margin: 0 0 6px;
+        color: var(--muted);
+        font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
       }
 
       h1 {
         margin: 0;
-        font-size: 30px;
+        font-size: 26px;
         line-height: 1.1;
       }
 
       .lede {
-        margin: 10px 0 0;
+        margin: 8px 0 0;
         color: var(--muted);
         max-width: 640px;
-        font-size: 14px;
-        line-height: 1.6;
+        font-size: 13px;
+        line-height: 1.5;
       }
 
       .meta {
-        min-width: 240px;
-        padding: 18px;
+        min-width: 220px;
+        padding: 14px;
         border: 1px solid var(--border);
-        border-radius: 18px;
-        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 14px;
+        background: var(--panel);
       }
 
       .meta-row {
         display: flex;
         justify-content: space-between;
         gap: 12px;
-        padding: 10px 0;
+        padding: 8px 0;
         border-bottom: 1px solid var(--border);
-        font-size: 13px;
+        font-size: 12px;
       }
 
       .meta-row:last-child { border-bottom: 0; padding-bottom: 0; }
@@ -156,93 +159,106 @@ export function renderAssetReportPrintDocument(
       .meta-value { font-weight: 600; text-align: right; }
 
       .section {
-        margin-top: 28px;
+        margin-top: 18px;
         break-inside: avoid;
       }
 
       .section-title {
-        margin: 0 0 14px;
-        font-size: 18px;
+        margin: 0 0 10px;
+        font-size: 17px;
         font-weight: 700;
       }
 
       .section-note {
-        margin: -4px 0 16px;
+        margin: -2px 0 12px;
         color: var(--muted);
-        font-size: 13px;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .section-note.compact {
+        margin: 10px 0 0;
       }
 
       .summary-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 14px;
+        gap: 10px;
       }
 
       .summary-card {
-        padding: 18px;
-        border-radius: 18px;
+        padding: 14px;
+        border-radius: 14px;
         border: 1px solid var(--border);
-        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        background: white;
       }
 
       .summary-label {
         color: var(--muted);
-        font-size: 12px;
+        font-size: 11px;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.12em;
       }
 
       .summary-value {
-        margin-top: 10px;
-        font-size: 26px;
+        margin-top: 8px;
+        font-size: 24px;
         font-weight: 700;
+        line-height: 1;
       }
 
       .summary-help {
-        margin-top: 8px;
+        margin-top: 6px;
         color: var(--muted);
-        font-size: 13px;
+        font-size: 12px;
+        line-height: 1.4;
       }
 
       .highlight-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 14px;
+        gap: 10px;
       }
 
       .highlight {
-        padding: 18px;
-        border-radius: 18px;
+        padding: 14px;
+        border-radius: 14px;
         border: 1px solid var(--border);
-        background:
-          radial-gradient(circle at top right, rgba(37, 99, 235, 0.1), transparent 42%),
-          linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        background: white;
+        position: relative;
       }
 
       .highlight.warm {
-        background:
-          radial-gradient(circle at top right, rgba(245, 158, 11, 0.14), transparent 42%),
-          linear-gradient(180deg, #ffffff 0%, #fffaf0 100%);
+        background: white;
       }
 
       .highlight.cool {
-        background:
-          radial-gradient(circle at top right, rgba(15, 118, 110, 0.12), transparent 42%),
-          linear-gradient(180deg, #ffffff 0%, #f0fdfa 100%);
+        background: white;
+      }
+
+      .highlight::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        border-radius: 14px 14px 0 0;
+        background: var(--ink);
       }
 
       .highlight-label {
         margin: 0;
         color: var(--muted);
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
       }
 
       .highlight-value {
-        margin: 10px 0 6px;
-        font-size: 20px;
+        margin: 8px 0 4px;
+        font-size: 18px;
         font-weight: 700;
         line-height: 1.2;
       }
@@ -250,32 +266,32 @@ export function renderAssetReportPrintDocument(
       .highlight-note {
         margin: 0;
         color: var(--muted);
-        font-size: 13px;
-        line-height: 1.55;
+        font-size: 12px;
+        line-height: 1.45;
       }
 
       .forecast-grid {
         display: grid;
         grid-template-columns: 1.1fr 0.9fr;
-        gap: 14px;
+        gap: 10px;
       }
 
       .stack {
         display: grid;
-        gap: 14px;
+        gap: 10px;
       }
 
       .recommendation-list,
       .risk-list {
         display: grid;
-        gap: 12px;
+        gap: 8px;
       }
 
       .recommendation,
       .risk-card {
         border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 14px;
+        border-radius: 12px;
+        padding: 10px 12px;
         background: white;
       }
 
@@ -290,115 +306,118 @@ export function renderAssetReportPrintDocument(
       .recommendation-title,
       .risk-name {
         margin: 0;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 700;
       }
 
       .recommendation-detail,
       .risk-meta {
-        margin: 6px 0 0;
+        margin: 4px 0 0;
         color: var(--muted);
-        font-size: 13px;
-        line-height: 1.55;
+        font-size: 12px;
+        line-height: 1.45;
       }
 
       .pill {
         flex-shrink: 0;
-        padding: 5px 9px;
+        padding: 4px 8px;
         border-radius: 999px;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.08em;
+        border: 1px solid var(--border-strong);
       }
 
       .pill.high {
-        background: #fee2e2;
-        color: #b91c1c;
+        background: #18181b;
+        color: #fafafa;
       }
 
       .pill.medium {
-        background: #fef3c7;
-        color: #b45309;
+        background: #52525b;
+        color: #fafafa;
       }
 
       .pill.low {
-        background: #e2e8f0;
-        color: #475569;
+        background: #f4f4f5;
+        color: #27272a;
       }
 
       .risk-score {
         flex-shrink: 0;
-        padding: 5px 9px;
+        padding: 4px 8px;
         border-radius: 999px;
-        background: #fee2e2;
-        color: #b91c1c;
-        font-size: 11px;
+        background: #18181b;
+        color: #fafafa;
+        font-size: 10px;
         font-weight: 700;
       }
 
       .chip-row {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 10px;
+        gap: 6px;
+        margin-top: 8px;
       }
 
       .chip {
-        padding: 5px 9px;
+        padding: 4px 8px;
         border-radius: 999px;
-        background: var(--panel);
-        font-size: 12px;
+        background: var(--panel-soft);
+        font-size: 11px;
         color: var(--muted);
+        border: 1px solid var(--border);
       }
 
       .chip.action {
-        background: #dbeafe;
-        color: #1d4ed8;
+        background: #18181b;
+        color: #fafafa;
+        border-color: #18181b;
       }
 
       .chart-grid {
         display: grid;
         grid-template-columns: 1.35fr 1fr 1fr;
-        gap: 14px;
+        gap: 10px;
       }
 
       .panel {
         border: 1px solid var(--border);
-        border-radius: 18px;
-        padding: 18px;
+        border-radius: 14px;
+        padding: 14px;
         background: var(--panel);
       }
 
       .panel h3 {
-        margin: 0 0 14px;
-        font-size: 15px;
+        margin: 0 0 10px;
+        font-size: 14px;
       }
 
       .list {
         display: grid;
-        gap: 12px;
+        gap: 8px;
       }
 
       .bar-row {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 64px;
-        gap: 12px;
+        grid-template-columns: minmax(0, 1fr) 52px;
+        gap: 8px;
         align-items: center;
       }
 
       .bar-copy { min-width: 0; }
 
       .bar-label {
-        font-size: 13px;
+        font-size: 12px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
       }
 
       .bar-track {
-        height: 10px;
+        height: 8px;
         border-radius: 999px;
         background: white;
         overflow: hidden;
@@ -412,12 +431,12 @@ export function renderAssetReportPrintDocument(
       }
 
       .bar-fill.warm {
-        background: linear-gradient(90deg, #f59e0b, var(--accent-warm));
+        background: linear-gradient(90deg, #71717a, var(--accent-warm));
       }
 
       .bar-value {
         text-align: right;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 600;
       }
 
@@ -430,22 +449,22 @@ export function renderAssetReportPrintDocument(
       }
 
       thead th {
-        background: #eaf4ff;
-        color: #0f172a;
-        font-size: 12px;
+        background: #f4f4f5;
+        color: var(--ink);
+        font-size: 11px;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.1em;
       }
 
       th, td {
-        padding: 12px 14px;
+        padding: 9px 10px;
         text-align: left;
         border-bottom: 1px solid var(--border);
-        font-size: 13px;
+        font-size: 12px;
       }
 
       tbody tr:nth-child(even) td {
-        background: #fbfdff;
+        background: #fcfcfc;
       }
 
       tbody tr:last-child td {
@@ -458,25 +477,41 @@ export function renderAssetReportPrintDocument(
       }
 
       .footer {
-        margin-top: 24px;
+        margin-top: 18px;
         color: var(--muted);
-        font-size: 12px;
+        font-size: 11px;
         display: flex;
         justify-content: space-between;
         gap: 16px;
         border-top: 1px solid var(--border);
-        padding-top: 14px;
+        padding-top: 10px;
       }
 
       @media print {
         @page {
           size: A4;
-          margin: 14mm;
+          margin: 10mm;
         }
 
         .page {
           max-width: none;
           padding: 0;
+        }
+
+        .summary-grid {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .highlight-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .chart-grid {
+          grid-template-columns: 1.25fr 1fr 1fr;
+        }
+
+        .forecast-grid {
+          grid-template-columns: 1.08fr 0.92fr;
         }
       }
 
@@ -493,7 +528,7 @@ export function renderAssetReportPrintDocument(
         }
       }
 
-      @media (max-width: 960px) {
+      @media screen and (max-width: 960px) {
         .header,
         .chart-grid,
         .summary-grid,
@@ -614,13 +649,14 @@ export function renderAssetReportPrintDocument(
             <h3>Timeline Breakdown</h3>
             <div class="list">
               ${timelineRows
+                .filter(row => row.value > 0)
                 .map(row =>
                   renderBarRow(
                     row,
                     Math.max(...report.charts.timeline.data, 1)
                   )
                 )
-                .join('')}
+                .join('') || renderEmptyState()}
             </div>
           </div>
           <div class="panel">
@@ -698,7 +734,7 @@ export function renderAssetReportPrintDocument(
                     <div>
                       <p class="recommendation-title">${escapeHtml(item.title)}</p>
                       <p class="recommendation-detail">${escapeHtml(item.detail)}</p>
-                      <p class="section-note" style="margin: 10px 0 0;">Owner: ${escapeHtml(item.owner)} · Confidence: ${escapeHtml(item.confidence)}</p>
+                      <p class="section-note compact">Owner: ${escapeHtml(item.owner)} &middot; Confidence: ${escapeHtml(item.confidence)}</p>
                     </div>
                     <span class="pill ${escapeHtml(item.priority)}">${escapeHtml(item.priority)}</span>
                   </div>
@@ -728,7 +764,7 @@ export function renderAssetReportPrintDocument(
                   'warm'
                 )}
               </div>
-              <p class="section-note" style="margin: 14px 0 0;">Focus area: ${escapeHtml(report.insights.trends.maintenanceFocusArea)} · Highest risk type: ${escapeHtml(report.insights.trends.highestRiskType)} · Unresolved rate: ${escapeHtml(String(report.insights.trends.unresolvedRate))}% · Replacement exposure: ${escapeHtml(formatCurrencyCompact(report.insights.trends.replacementExposure))}</p>
+              <p class="section-note compact">Focus area: ${escapeHtml(report.insights.trends.maintenanceFocusArea)} &middot; Highest risk type: ${escapeHtml(report.insights.trends.highestRiskType)} &middot; Unresolved rate: ${escapeHtml(String(report.insights.trends.unresolvedRate))}% &middot; Replacement exposure: ${escapeHtml(formatCurrencyCompact(report.insights.trends.replacementExposure))}</p>
             </div>
             <div class="panel">
               <h3>Maintenance Pressure</h3>
@@ -741,7 +777,7 @@ export function renderAssetReportPrintDocument(
                     <div class="risk-top">
                       <div>
                         <p class="risk-name">${escapeHtml(item.label)}</p>
-                        <p class="risk-meta">${item.assetCount} assets · ${item.openCases} open cases · ${item.dueSoonCount} due soon</p>
+                        <p class="risk-meta">${item.assetCount} assets &middot; ${item.openCases} open cases &middot; ${item.dueSoonCount} due soon</p>
                       </div>
                       <span class="risk-score">${item.averageRiskScore}</span>
                     </div>
@@ -763,7 +799,7 @@ export function renderAssetReportPrintDocument(
                     <div class="risk-top">
                       <div>
                         <p class="risk-name">${escapeHtml(asset.assetName)}</p>
-                        <p class="risk-meta">${escapeHtml(asset.assetNo)} · ${escapeHtml(asset.type)} · ${escapeHtml(asset.category)}</p>
+                        <p class="risk-meta">${escapeHtml(asset.assetNo)} &middot; ${escapeHtml(asset.type)} &middot; ${escapeHtml(asset.category)}</p>
                       </div>
                       <span class="risk-score">${asset.riskScore}</span>
                     </div>
@@ -859,7 +895,7 @@ function renderBarRow(row: PrintRow, max: number, tone?: 'warm') {
 }
 
 function renderEmptyState() {
-  return '<p style="margin: 0; color: #475569; font-size: 13px; line-height: 1.6;">No data available for the selected filters.</p>'
+  return '<p style="margin: 0; color: #4b5563; font-size: 12px; line-height: 1.5;">No data available for the selected filters.</p>'
 }
 
 function formatCurrencyCompact(value: number) {

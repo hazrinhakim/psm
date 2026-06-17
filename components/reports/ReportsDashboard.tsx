@@ -66,11 +66,11 @@ type ReportsDashboardProps = {
 }
 
 const PERIOD_OPTIONS: { value: AssetReportPeriod; label: string }[] = [
-  { value: 'all-time', label: 'All Time' },
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'quarterly', label: 'Quarterly (3 months)' },
-  { value: 'half-yearly', label: 'Half-yearly (6 months)' },
-  { value: 'yearly', label: 'Yearly' },
+  { value: 'one-month', label: '1 Month' },
+  { value: 'three-month', label: '3 Months' },
+  { value: 'six-month', label: '6 Months' },
+  { value: 'one-year', label: '1 Year' },
+  { value: 'three-year', label: '3 Years' },
 ]
 
 const timelineChartConfig = {
@@ -222,12 +222,136 @@ export function ReportsDashboard({
           <TabsTrigger value="risk" className="min-w-[116px] snap-start flex-none sm:min-w-0 sm:flex-1">
             AI Risk
           </TabsTrigger>
-          <TabsTrigger value="breakdown" className="min-w-[116px] snap-start flex-none sm:min-w-0 sm:flex-1">
-            Breakdown
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
+
+      <Card className="min-w-0 border-border/70 shadow-none">
+        <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-1.5">
+            <CardTitle className="text-base font-semibold">
+              Detailed Category Distribution
+            </CardTitle>
+            <CardDescription>
+              Asset count grouped by selected category
+            </CardDescription>
+          </div>
+          <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap lg:justify-end">
+            <Button variant="outline" className="w-full gap-2 sm:w-auto" onClick={handleExportPdf}>
+              <Download className="h-4 w-4" />
+              Export PDF
+            </Button>
+            <Button className="w-full gap-2 sm:w-auto" onClick={handleExportExcel}>
+              <FileSpreadsheet className="h-4 w-4" />
+              Export Excel
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-0">
+          <div className="space-y-4 px-4 pb-4 sm:px-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <FilterField label="Category">
+                <MultiSelectDropdown
+                  placeholder="All categories"
+                  selectedValues={filters.categoryIds}
+                  options={categoryOptions}
+                  onToggle={value =>
+                    setFilters(current => ({
+                      ...current,
+                      categoryIds: toggleValue(current.categoryIds, value),
+                    }))
+                  }
+                />
+              </FilterField>
+
+              <FilterField label="Time Period">
+                <Select
+                  value={filters.period}
+                  onValueChange={value =>
+                    handlePeriodChange(value as AssetReportPeriod)
+                  }
+                >
+                  <SelectTrigger className="h-11 w-full">
+                    <SelectValue placeholder="Select period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PERIOD_OPTIONS.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FilterField>
+            </div>
+
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setFilters(initialFilters)}
+                className="h-9 rounded-full border-border/70 bg-background px-4 text-foreground shadow-none hover:bg-muted/60"
+              >
+                Reset filters
+              </Button>
+              <p className="text-sm text-muted-foreground">
+                Showing asset distribution from {report.meta.startLabel} to{' '}
+                {report.meta.endLabel}.
+              </p>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[420px] text-sm">
+              <thead className="bg-muted/40 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <tr className="border-b">
+                  <th className="py-4 pl-4 pr-3 font-medium sm:pl-6">Category</th>
+                  <th className="px-3 py-4 text-center font-medium">Total Assets</th>
+                  <th className="px-4 py-4 text-center font-medium sm:px-6">Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.charts.categoryDistribution.labels.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="h-48 px-4 text-center text-muted-foreground sm:px-6"
+                    >
+                      No assets found for the selected filters.
+                    </td>
+                  </tr>
+                ) : (
+                  report.charts.categoryDistribution.labels.map((label, index) => {
+                    const count = report.charts.categoryDistribution.data[index] ?? 0
+                    const share =
+                      report.summary.totalAssets > 0
+                        ? Number(((count / report.summary.totalAssets) * 100).toFixed(1))
+                        : 0
+
+                    return (
+                      <tr
+                        key={label}
+                        className="border-b last:border-b-0 transition-colors hover:bg-muted/30"
+                      >
+                        <td className="py-4 pl-4 pr-3 font-medium text-foreground sm:pl-6">
+                          {label}
+                        </td>
+                        <td className="px-3 py-4 text-center font-medium text-foreground">
+                          {count}
+                        </td>
+                        <td className="px-4 py-4 text-center text-muted-foreground sm:px-6">
+                          {share}%
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
         <Card className="min-w-0 border-border/70 shadow-none">
@@ -659,136 +783,6 @@ export function ReportsDashboard({
         </CardContent>
       </Card>
 
-        </TabsContent>
-
-        <TabsContent value="breakdown" className="space-y-6">
-
-      <Card className="min-w-0 border-border/70 shadow-none">
-        <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-1.5">
-            <CardTitle className="text-base font-semibold">
-              Detailed Category Distribution
-            </CardTitle>
-            <CardDescription>
-              Asset count grouped by selected category
-            </CardDescription>
-          </div>
-          <div className="grid w-full gap-2 sm:flex sm:w-auto sm:flex-wrap lg:justify-end">
-            <Button variant="outline" className="w-full gap-2 sm:w-auto" onClick={handleExportPdf}>
-              <Download className="h-4 w-4" />
-              Export PDF
-            </Button>
-            <Button className="w-full gap-2 sm:w-auto" onClick={handleExportExcel}>
-              <FileSpreadsheet className="h-4 w-4" />
-              Export Excel
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-0">
-          <div className="space-y-4 px-4 pb-4 sm:px-6">
-            <div className="grid gap-4 md:grid-cols-2">
-              <FilterField label="Category">
-                <MultiSelectDropdown
-                  placeholder="All categories"
-                  selectedValues={filters.categoryIds}
-                  options={categoryOptions}
-                  onToggle={value =>
-                    setFilters(current => ({
-                      ...current,
-                      categoryIds: toggleValue(current.categoryIds, value),
-                    }))
-                  }
-                />
-              </FilterField>
-
-              <FilterField label="Time Period">
-                <Select
-                  value={filters.period}
-                  onValueChange={value =>
-                    handlePeriodChange(value as AssetReportPeriod)
-                  }
-                >
-                  <SelectTrigger className="h-11 w-full">
-                    <SelectValue placeholder="Select period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PERIOD_OPTIONS.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FilterField>
-            </div>
-
-            <div className="flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setFilters(initialFilters)}
-                className="h-9 rounded-full border-border/70 bg-background px-4 text-foreground shadow-none hover:bg-muted/60"
-              >
-                Reset filters
-              </Button>
-              <p className="text-sm text-muted-foreground">
-                Showing asset distribution from {report.meta.startLabel} to{' '}
-                {report.meta.endLabel}.
-              </p>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[420px] text-sm">
-              <thead className="bg-muted/40 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                <tr className="border-b">
-                  <th className="py-4 pl-4 pr-3 font-medium sm:pl-6">Category</th>
-                  <th className="px-3 py-4 text-center font-medium">Total Assets</th>
-                  <th className="px-4 py-4 text-center font-medium sm:px-6">Percentage</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.charts.categoryDistribution.labels.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={3}
-                      className="h-48 px-4 text-center text-muted-foreground sm:px-6"
-                    >
-                      No assets found for the selected filters.
-                    </td>
-                  </tr>
-                ) : (
-                  report.charts.categoryDistribution.labels.map((label, index) => {
-                    const count = report.charts.categoryDistribution.data[index] ?? 0
-                    const share =
-                      report.summary.totalAssets > 0
-                        ? Number(((count / report.summary.totalAssets) * 100).toFixed(1))
-                        : 0
-
-                    return (
-                      <tr
-                        key={label}
-                        className="border-b last:border-b-0 transition-colors hover:bg-muted/30"
-                      >
-                        <td className="py-4 pl-4 pr-3 font-medium text-foreground sm:pl-6">
-                          {label}
-                        </td>
-                        <td className="px-3 py-4 text-center font-medium text-foreground">
-                          {count}
-                        </td>
-                        <td className="px-4 py-4 text-center text-muted-foreground sm:px-6">
-                          {share}%
-                        </td>
-                      </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
         </TabsContent>
       </Tabs>
     </div>
