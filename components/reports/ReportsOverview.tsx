@@ -8,7 +8,7 @@ import { ReportsDashboard } from '@/components/reports/ReportsDashboard'
 
 export async function ReportsOverview() {
   const supabase = await createSupabaseServerClient()
-  const initialFilters = getDefaultAssetReportFilters('yearly')
+  const initialFilters = getDefaultAssetReportFilters('all-time')
   const [filterOptions, initialReport] = await Promise.all([
     getAssetReportFilterOptions(supabase),
     buildCustomAssetReport(supabase, initialFilters),

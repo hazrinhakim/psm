@@ -66,6 +66,7 @@ type ReportsDashboardProps = {
 }
 
 const PERIOD_OPTIONS: { value: AssetReportPeriod; label: string }[] = [
+  { value: 'all-time', label: 'All Time' },
   { value: 'monthly', label: 'Monthly' },
   { value: 'quarterly', label: 'Quarterly (3 months)' },
   { value: 'half-yearly', label: 'Half-yearly (6 months)' },
@@ -82,7 +83,7 @@ const timelineChartConfig = {
 const categoryChartConfig = {
   assets: {
     label: 'Assets',
-    color: '#F5F500',
+    color: '#2563eb',
   },
 } satisfies ChartConfig
 
@@ -208,14 +209,14 @@ export function ReportsDashboard({
       ) : null}
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl border border-border/70 bg-muted/30 p-1 sm:flex sm:flex-wrap sm:justify-start">
-          <TabsTrigger value="overview" className="w-full">
+        <TabsList className="scrollbar-hidden flex h-auto w-full min-w-0 justify-start snap-x snap-mandatory gap-1 overflow-x-auto rounded-2xl border border-border/70 bg-muted/30 p-1 sm:flex-wrap sm:overflow-visible">
+          <TabsTrigger value="overview" className="min-w-[116px] snap-start flex-none sm:min-w-0 sm:flex-1">
             Overview
           </TabsTrigger>
-          <TabsTrigger value="risk" className="w-full">
+          <TabsTrigger value="risk" className="min-w-[116px] snap-start flex-none sm:min-w-0 sm:flex-1">
             AI Risk
           </TabsTrigger>
-          <TabsTrigger value="breakdown" className="w-full">
+          <TabsTrigger value="breakdown" className="min-w-[116px] snap-start flex-none sm:min-w-0 sm:flex-1">
             Breakdown
           </TabsTrigger>
         </TabsList>
@@ -332,47 +333,53 @@ export function ReportsDashboard({
             </CardDescription>
           </CardHeader>
           <CardContent className={cn('px-4 pb-4 sm:px-6 sm:pb-6', loading && 'opacity-60')}>
-            <div className="-mx-4 overflow-x-auto pb-2 sm:mx-0">
-              <div
-                className="h-72 min-w-[320px] pr-4 sm:h-80 sm:pr-0"
-                style={{ minWidth: `${categoryChartMinWidth}px` }}
-              >
-                <ChartContainer
-                  config={categoryChartConfig}
-                  className="h-full w-full min-w-0"
-                >
-                  <BarChart
-                    accessibilityLayer
-                    data={categoryChartData}
-                    margin={{ left: 0, right: 8, top: 8 }}
-                  >
-                    <CartesianGrid vertical={false} />
-                    <XAxis
-                      dataKey="label"
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={8}
-                      minTickGap={16}
-                    />
-                    <YAxis
-                      allowDecimals={false}
-                      tickLine={false}
-                      axisLine={false}
-                      width={28}
-                    />
-                    <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent indicator="dot" />}
-                    />
-                    <Bar
-                      dataKey="assets"
-                      fill="var(--color-assets)"
-                      radius={[10, 10, 0, 0]}
-                    />
-                  </BarChart>
-                </ChartContainer>
+            {categoryChartData.length === 0 ? (
+              <div className="flex h-72 items-center justify-center rounded-2xl border border-dashed border-border/70 bg-muted/20 text-sm text-muted-foreground sm:h-80">
+                No category data available for the current filters.
               </div>
-            </div>
+            ) : (
+              <div className="-mx-4 overflow-x-auto pb-2 sm:mx-0">
+                <div
+                  className="h-72 min-w-[320px] pr-4 sm:h-80 sm:pr-0"
+                  style={{ minWidth: `${categoryChartMinWidth}px` }}
+                >
+                  <ChartContainer
+                    config={categoryChartConfig}
+                    className="h-full w-full min-w-0"
+                  >
+                    <BarChart
+                      accessibilityLayer
+                      data={categoryChartData}
+                      margin={{ left: 0, right: 8, top: 8 }}
+                    >
+                      <CartesianGrid vertical={false} />
+                      <XAxis
+                        dataKey="label"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                        minTickGap={16}
+                      />
+                      <YAxis
+                        allowDecimals={false}
+                        tickLine={false}
+                        axisLine={false}
+                        width={28}
+                      />
+                      <ChartTooltip
+                        cursor={false}
+                        content={<ChartTooltipContent indicator="dot" />}
+                      />
+                      <Bar
+                        dataKey="assets"
+                        fill="var(--color-assets)"
+                        radius={[10, 10, 0, 0]}
+                      />
+                    </BarChart>
+                  </ChartContainer>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

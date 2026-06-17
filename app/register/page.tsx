@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { CircleAlert } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import {
   clearInvalidBrowserSession,
@@ -22,7 +23,12 @@ import { normalizeRole, roleToPath } from '@/lib/roles'
 import { toast } from 'sonner'
 import { Spinner } from '@/components/ui/spinner'
 import { PasswordInput } from '@/components/ui/password-input'
-import { isStrongPassword, passwordPolicyHint } from '@/lib/passwordPolicy'
+import {
+  isStrongPassword,
+  passwordPolicyHint,
+  passwordPolicyPattern,
+} from '@/lib/passwordPolicy'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export default function RegisterPage() {
   const [mode, setMode] = useState<'signup' | 'invite'>('signup')
@@ -300,6 +306,9 @@ export default function RegisterPage() {
                 value={password}
                 onChange={event => setPassword(event.target.value)}
                 autoComplete="new-password"
+                minLength={8}
+                pattern={passwordPolicyPattern}
+                title={passwordPolicyHint}
                 required
                 disabled={!ready}
               />
@@ -321,6 +330,9 @@ export default function RegisterPage() {
                 value={confirmPassword}
                 onChange={event => setConfirmPassword(event.target.value)}
                 autoComplete="new-password"
+                minLength={8}
+                pattern={passwordPolicyPattern}
+                title={passwordPolicyHint}
                 required
                 disabled={!ready}
               />
@@ -328,9 +340,11 @@ export default function RegisterPage() {
           </div>
 
           {error ? (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
-              {error}
-            </div>
+            <Alert variant="destructive">
+              <CircleAlert className="h-4 w-4" />
+              <AlertTitle>Registration failed</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           ) : null}
 
           <Button

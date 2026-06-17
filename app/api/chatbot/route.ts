@@ -37,6 +37,15 @@ type ChatbotRequestBody = {
   message?: string
 }
 
+function getGeminiApiKey() {
+  return (
+    process.env.GEMINI_API_KEY?.trim() ||
+    process.env.GOOGLE_API_KEY?.trim() ||
+    process.env.GOOGLE_GENAI_API_KEY?.trim() ||
+    ''
+  )
+}
+
 function normalizeReply(text: string) {
   return text
     .replace(/\r\n/g, '\n')
@@ -69,11 +78,14 @@ export async function POST(request: Request) {
       )
     }
 
-    const apiKey = process.env.GEMINI_API_KEY?.trim()
+    const apiKey = getGeminiApiKey()
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'GEMINI_API_KEY is not configured.' },
+        {
+          error:
+            'AI assistant is not configured on this deployment. Set GEMINI_API_KEY, GOOGLE_API_KEY, or GOOGLE_GENAI_API_KEY in the server environment and redeploy.',
+        },
         { status: 500 }
       )
     }

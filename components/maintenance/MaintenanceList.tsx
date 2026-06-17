@@ -553,17 +553,17 @@ export async function MaintenanceList({
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid h-auto w-full grid-cols-2 rounded-2xl border border-border/70 bg-muted/30 p-1 sm:flex sm:flex-wrap sm:justify-start">
-          <TabsTrigger value="overview" className="w-full">
+        <TabsList className="scrollbar-hidden flex h-auto w-full min-w-0 justify-start snap-x snap-mandatory gap-1 overflow-x-auto rounded-2xl border border-border/70 bg-muted/30 p-1 sm:flex-wrap sm:overflow-visible">
+          <TabsTrigger value="overview" className="min-w-[116px] snap-start flex-none sm:min-w-0 sm:flex-1">
             Overview
           </TabsTrigger>
-          <TabsTrigger value="requests" className="w-full">
+          <TabsTrigger value="requests" className="min-w-[116px] snap-start flex-none sm:min-w-0 sm:flex-1">
             Requests
           </TabsTrigger>
-          <TabsTrigger value="schedules" className="w-full">
+          <TabsTrigger value="schedules" className="min-w-[116px] snap-start flex-none sm:min-w-0 sm:flex-1">
             Schedules
           </TabsTrigger>
-          <TabsTrigger value="history" className="w-full">
+          <TabsTrigger value="history" className="min-w-[116px] snap-start flex-none sm:min-w-0 sm:flex-1">
             History
           </TabsTrigger>
         </TabsList>

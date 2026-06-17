@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { CircleAlert } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { getSessionSafely } from '@/lib/supabaseAuth'
 import { Button } from '@/components/ui/button'
@@ -15,8 +16,13 @@ import {
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
 import { Spinner } from '@/components/ui/spinner'
-import { isStrongPassword, passwordPolicyHint } from '@/lib/passwordPolicy'
+import {
+  isStrongPassword,
+  passwordPolicyHint,
+  passwordPolicyPattern,
+} from '@/lib/passwordPolicy'
 import { toast } from 'sonner'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export default function SetPasswordPage() {
   const router = useRouter()
@@ -95,6 +101,9 @@ export default function SetPasswordPage() {
                 value={password}
                 onChange={event => setPassword(event.target.value)}
                 autoComplete="new-password"
+                minLength={8}
+                pattern={passwordPolicyPattern}
+                title={passwordPolicyHint}
                 required
                 disabled={!ready}
               />
@@ -109,13 +118,20 @@ export default function SetPasswordPage() {
                 value={confirmPassword}
                 onChange={event => setConfirmPassword(event.target.value)}
                 autoComplete="new-password"
+                minLength={8}
+                pattern={passwordPolicyPattern}
+                title={passwordPolicyHint}
                 required
                 disabled={!ready}
               />
             </div>
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
+            {error ? (
+              <Alert variant="destructive">
+                <CircleAlert className="h-4 w-4" />
+                <AlertTitle>Password update failed</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : null}
             <Button type="submit" className="w-full" disabled={loading || !ready}>
               {loading && <Spinner className="mr-2" />}
               {loading ? 'Saving...' : 'Save password'}

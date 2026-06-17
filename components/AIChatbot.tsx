@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Bot, LoaderCircle, SendHorizonal, User } from 'lucide-react'
+import { Bot, CircleAlert, LoaderCircle, SendHorizonal, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 type ChatMessage = {
   id: string
@@ -135,8 +136,8 @@ export function AIChatbot() {
     <Card className="flex h-full w-full flex-col border-none shadow-none">
       <CardContent className="flex min-h-0 flex-1 flex-col px-3 sm:px-5 lg:px-8">
         <div className="relative min-h-0 flex-1 overflow-hidden rounded-sm bg-muted/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-14 bg-gradient-to-b from-background/90 via-background/55 via-35% to-transparent backdrop-blur-md [mask-image:linear-gradient(to_bottom,black_35%,transparent_100%)]" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-14 bg-gradient-to-t from-background/90 via-background/55 via-35% to-transparent backdrop-blur-md [mask-image:linear-gradient(to_top,black_35%,transparent_100%)]" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-12 bg-gradient-to-b from-background/90 via-background/55 via-35% to-transparent backdrop-blur-md [mask-image:linear-gradient(to_bottom,black_35%,transparent_100%)]" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-12 bg-gradient-to-t from-background/90 via-background/55 via-35% to-transparent backdrop-blur-md [mask-image:linear-gradient(to_top,black_35%,transparent_100%)]" />
 
           <div className="h-full space-y-5 overflow-y-auto px-3 pt-12 pb-8 scroll-smooth sm:px-4">
             {messages.map(entry => (
@@ -178,9 +179,11 @@ export function AIChatbot() {
         </div>
 
         {error ? (
-          <div className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
+          <Alert variant="destructive" className="mt-3">
+            <CircleAlert className="h-4 w-4" />
+            <AlertTitle>Assistant error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         ) : null}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3 pt-3 sm:flex-row">

@@ -64,6 +64,10 @@ function SliceValueLabel({
   outerRadius = 0,
   value,
 }: PieLabelProps) {
+  if (Number(value) <= 0) {
+    return null
+  }
+
   const RADIAN = Math.PI / 180
   const sin = Math.sin(-RADIAN * midAngle)
   const cos = Math.cos(-RADIAN * midAngle)
@@ -188,6 +192,8 @@ export function AssetStatusOverview({
                   nameKey="label"
                   innerRadius={76}
                   outerRadius={104}
+                  startAngle={82}
+                  endAngle={-278}
                   paddingAngle={4}
                   cornerRadius={10}
                   strokeWidth={0}

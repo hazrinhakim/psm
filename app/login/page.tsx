@@ -21,16 +21,19 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
+import {
+  isStrongPassword,
+  passwordPolicyHint,
+} from '@/lib/passwordPolicy'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
+
     setLoading(true)
 
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -39,14 +42,12 @@ export default function LoginPage() {
     })
 
     if (error) {
-      setError(error.message)
       toast.error(error.message)
       setLoading(false)
       return
     }
 
     if (!data.user) {
-      setError('Login failed')
       toast.error('Login failed')
       setLoading(false)
       return
@@ -57,6 +58,14 @@ export default function LoginPage() {
       .select('role')
       .eq('id', data.user.id)
       .maybeSingle()
+
+    if (!isStrongPassword(password)) {
+      toast.error(
+        'Password ini masih guna format lama. Sila kemas kini kepada format yang lebih selamat.'
+      )
+      await navigateAfterAuthChange('/auth/set-password?reason=upgrade')
+      return
+    }
 
     await navigateAfterAuthChange(roleToPath(profile?.role))
   }
@@ -147,13 +156,10 @@ export default function LoginPage() {
                       className="pl-11"
                     />
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    {passwordPolicyHint}
+                  </p>
                 </div>
-
-                {error ? (
-                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
-                    {error}
-                  </div>
-                ) : null}
 
                 <Button type="submit" className="h-11 w-full" disabled={loading}>
                   {loading ? (

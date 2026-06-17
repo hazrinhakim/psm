@@ -44,25 +44,25 @@ const menus: Record<
       { label: 'Users Management', path: '/users', icon: Users },
       { label: 'Assets Management', path: '/assets', icon: Package },
       { label: 'QR Codes Management', path: '/qr', icon: QrCode },
-      { label: 'Maintenance Request', path: '/maintenance', icon: Wrench },
-      { label: 'Feedback Management', path: '/feedback', icon: MessageSquare },
+      { label: 'Maintenance Management', path: '/maintenance', icon: Wrench },
+      { label: 'Feedback Review', path: '/feedback', icon: MessageSquare },
       { label: 'Reports & Analytics', path: '/reports', icon: FileBarChart },
       { label: 'AI Assistant', path: '/chatbot', icon: Bot },
     ],
     admin_assistant: [
       { label: 'Dashboard', path: '', icon: LayoutDashboard },
-      { label: 'Assets Management', path: '/assets', icon: Package },
-      { label: 'QR Codes Management', path: '/qr', icon: QrCode },
+      { label: 'Assets', path: '/assets', icon: Package },
+      { label: 'QR Codes', path: '/qr', icon: QrCode },
       { label: 'Maintenance Request', path: '/maintenance', icon: Wrench },
-      { label: 'Feedback Management', path: '/feedback', icon: MessageSquare },
+      { label: 'Feedback', path: '/feedback', icon: MessageSquare },
       { label: 'Reports & Analytics', path: '/reports', icon: FileBarChart },
       { label: 'AI Assistant', path: '/chatbot', icon: Bot },
     ],
     staff: [
       { label: 'Dashboard', path: '', icon: LayoutDashboard },
-      { label: 'Assets Management', path: '/assets', icon: Package },
+      { label: 'Assets', path: '/assets', icon: Package },
       { label: 'Maintenance Request', path: '/maintenance', icon: Wrench },
-      { label: 'Feedback Management', path: '/feedback', icon: MessageSquare },
+      { label: 'Feedback', path: '/feedback', icon: MessageSquare },
       { label: 'Notifications', path: '/notifications', icon: Bell },
       { label: 'AI Assistant', path: '/chatbot', icon: Bot },
     ],
@@ -171,6 +171,7 @@ export function Sidebar({
                   asChild
                   isActive={isActive}
                   tooltip={item.label}
+                  className="h-auto min-h-10 items-start py-2.5 md:min-h-8 md:items-center md:py-2 [&>span:last-child]:whitespace-normal [&>span:last-child]:break-words [&>span:last-child]:leading-5 md:[&>span:last-child]:truncate"
                 >
                   <Link href={href}>
                     <Icon className="h-4 w-4" />
