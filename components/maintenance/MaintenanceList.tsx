@@ -16,7 +16,9 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { SonnerNotifier } from '@/components/ui/sonner-notifier'
+import { createSupabaseAdminClient } from '@/lib/supabaseAdmin'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
+import { normalizeRole } from '@/lib/roles'
 import { AnimatedCount } from '@/components/assets/AnimatedCount'
 import { MaintenanceFilterForm } from '@/components/maintenance/MaintenanceFilterForm'
 import { MaintenanceSchedulerTrigger } from '@/components/maintenance/MaintenanceSchedulerTrigger'
@@ -66,6 +68,19 @@ type MaintenanceRequest = {
         asset_name?: string | null
       }[]
     | null
+}
+
+type RawMaintenanceRequest = {
+  id: string
+  title?: string | null
+  description?: string | null
+  status?: string | null
+  priority?: string | null
+  request_type?: string | null
+  due_date?: string | null
+  created_at?: string | null
+  requested_by?: string | null
+  asset_id?: string | null
 }
 
 type AssetOption = {
@@ -318,15 +333,33 @@ export async function MaintenanceList({
   const selectedUrgency = normalizeUrgencyParam(urgencyParam)
 
   const supabase = await createSupabaseServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const { data: profile } = user
+    ? await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle()
+    : { data: null }
+
+  const role = normalizeRole(profile?.role)
+  const adminClient =
+    role === 'admin' || role === 'admin_assistant'
+      ? createSupabaseAdminClient()
+      : null
+  const dataClient = adminClient ?? supabase
 
   const [
-    { data: requests },
+    { data: rawRequests },
     { data: dueAssets },
     { data: activeSchedules },
     { data: assets },
   ] =
     await Promise.all([
-      supabase
+      dataClient
         .from('maintenance_requests')
         .select(
           `
@@ -338,35 +371,90 @@ export async function MaintenanceList({
           request_type,
           due_date,
           created_at,
-          requested_by:profiles ( full_name ),
-          assets ( asset_no, asset_name )
+          requested_by,
+          asset_id
         `
         )
         .order('created_at', { ascending: false }),
-      supabase
+      dataClient
         .from('v_assets_due_for_maintenance')
         .select(
           'asset_id, asset_no, asset_name, department, unit, maintenance_priority, next_service_date, service_state, days_until_service'
         )
         .order('next_service_date', { ascending: true })
         .limit(8),
-      supabase
+      dataClient
         .from('v_maintenance_schedule_dashboard')
         .select(
           'id, asset_id, asset_no, asset_name, title, maintenance_type, priority, next_due_date, reminder_days_before, auto_create_request, schedule_state, days_until_due'
         )
         .order('next_due_date', { ascending: true })
         .limit(8),
-      supabase
+      dataClient
         .from('assets')
         .select('id, asset_no, asset_name, next_service_date')
         .order('asset_name'),
     ])
 
-  const allRequests = (requests ?? []) as MaintenanceRequest[]
+  const baseRequests = (rawRequests ?? []) as RawMaintenanceRequest[]
   const dueAssetList = (dueAssets ?? []) as DueAsset[]
   const activeScheduleList = (activeSchedules ?? []) as ScheduleDashboardItem[]
   const assetOptions = (assets ?? []) as AssetOption[]
+  const requesterIds = Array.from(
+    new Set(
+      baseRequests
+        .map(request => request.requested_by)
+        .filter((value): value is string => Boolean(value))
+    )
+  )
+  const requestAssetIds = Array.from(
+    new Set(
+      baseRequests
+        .map(request => request.asset_id)
+        .filter((value): value is string => Boolean(value))
+    )
+  )
+
+  const [{ data: requesterProfiles }, { data: requestAssets }] = await Promise.all([
+    requesterIds.length > 0
+      ? dataClient.from('profiles').select('id, full_name').in('id', requesterIds)
+      : Promise.resolve({ data: [] }),
+    requestAssetIds.length > 0
+      ? dataClient
+          .from('assets')
+          .select('id, asset_no, asset_name')
+          .in('id', requestAssetIds)
+      : Promise.resolve({ data: [] }),
+  ])
+
+  const requesterMap = new Map(
+    (requesterProfiles ?? []).map(profile => [profile.id, profile.full_name ?? null])
+  )
+  const assetMap = new Map(
+    (requestAssets ?? []).map(asset => [
+      asset.id,
+      {
+        asset_no: asset.asset_no ?? null,
+        asset_name: asset.asset_name ?? null,
+      },
+    ])
+  )
+  const allRequests = baseRequests.map<MaintenanceRequest>(request => ({
+    id: request.id,
+    title: request.title ?? null,
+    description: request.description ?? null,
+    status: request.status ?? null,
+    priority: request.priority ?? null,
+    request_type: request.request_type ?? null,
+    due_date: request.due_date ?? null,
+    created_at: request.created_at ?? null,
+    requested_by: {
+      full_name: request.requested_by
+        ? (requesterMap.get(request.requested_by) ?? null)
+        : null,
+    },
+    assets: request.asset_id ? (assetMap.get(request.asset_id) ?? null) : null,
+  }))
   const filteredRequests = allRequests.filter(request => {
     const matchesStatus =
       selectedStatus === 'all' ||

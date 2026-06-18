@@ -1,17 +1,14 @@
 import { getCurrentUserContext } from './currentUser'
+import { createSupabaseAdminClient } from './supabaseAdmin'
 
 type DashboardScope = 'all' | 'assigned'
-
-type MaintenanceProfile = {
-  full_name?: string | null
-}
 
 type RawRecentMaintenanceItem = {
   id: string
   title?: string | null
   status?: string | null
   created_at?: string | null
-  profiles?: MaintenanceProfile | MaintenanceProfile[] | null
+  requested_by?: string | null
 }
 
 export async function getDashboardStats(scope: DashboardScope = 'all') {
@@ -21,8 +18,14 @@ export async function getDashboardStats(scope: DashboardScope = 'all') {
   const assignee = profile?.full_name?.trim()
   const userId = user?.id ?? '00000000-0000-0000-0000-000000000000'
   const assigneeMatch = assignee || '__missing__'
+  const role = profile?.role ?? null
+  const adminClient =
+    !isScoped && (role === 'admin' || role === 'admin_assistant')
+      ? createSupabaseAdminClient()
+      : null
+  const dataClient = adminClient ?? supabase
 
-  let totalAssetsQuery = supabase
+  let totalAssetsQuery = dataClient
     .from('assets')
     .select('id', { count: 'exact', head: true })
   if (isScoped) {
@@ -33,13 +36,13 @@ export async function getDashboardStats(scope: DashboardScope = 'all') {
         .from('assets')
         .select('id', { count: 'exact', head: true })
         .eq('user_name', assigneeMatch)
-    : supabase
+    : dataClient
         .from('assets')
         .select('id', { count: 'exact', head: true })
         .not('user_name', 'is', null)
         .neq('user_name', '')
 
-  let pendingMaintenanceQuery = supabase
+  let pendingMaintenanceQuery = dataClient
     .from('maintenance_requests')
     .select('id', { count: 'exact', head: true })
     .eq('status', 'Pending')
@@ -47,7 +50,7 @@ export async function getDashboardStats(scope: DashboardScope = 'all') {
     pendingMaintenanceQuery = pendingMaintenanceQuery.eq('requested_by', userId)
   }
 
-  let inProgressMaintenanceQuery = supabase
+  let inProgressMaintenanceQuery = dataClient
     .from('maintenance_requests')
     .select('id', { count: 'exact', head: true })
     .eq('status', 'In Progress')
@@ -58,7 +61,7 @@ export async function getDashboardStats(scope: DashboardScope = 'all') {
     )
   }
 
-  let completedMaintenanceQuery = supabase
+  let completedMaintenanceQuery = dataClient
     .from('maintenance_requests')
     .select('id', { count: 'exact', head: true })
     .eq('status', 'Resolved')
@@ -69,7 +72,7 @@ export async function getDashboardStats(scope: DashboardScope = 'all') {
     )
   }
 
-  let recentMaintenanceQuery = supabase
+  let recentMaintenanceQuery = dataClient
     .from('maintenance_requests')
     .select(
       `
@@ -77,7 +80,7 @@ export async function getDashboardStats(scope: DashboardScope = 'all') {
       title,
       status,
       created_at,
-      profiles ( full_name )
+      requested_by
     `
     )
     .eq('status', 'Pending')
@@ -110,13 +113,35 @@ export async function getDashboardStats(scope: DashboardScope = 'all') {
     recentMaintenanceQuery,
   ])
 
+  const requesterIds = Array.from(
+    new Set(
+      ((recentMaintenance ?? []) as RawRecentMaintenanceItem[])
+        .map(request => request.requested_by)
+        .filter((value): value is string => Boolean(value))
+    )
+  )
+
+  const { data: requesterProfiles } =
+    requesterIds.length > 0
+      ? await dataClient
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', requesterIds)
+      : { data: [] }
+
+  const requesterMap = new Map(
+    (requesterProfiles ?? []).map(profile => [profile.id, profile.full_name ?? null])
+  )
+
   const normalizedRecentMaintenance = (
     (recentMaintenance ?? []) as RawRecentMaintenanceItem[]
   ).map(request => ({
     ...request,
-    profiles: Array.isArray(request.profiles)
-      ? (request.profiles[0] ?? null)
-      : (request.profiles ?? null),
+    profiles: {
+      full_name: request.requested_by
+        ? (requesterMap.get(request.requested_by) ?? null)
+        : null,
+    },
   }))
 
   const total = totalAssets ?? 0
